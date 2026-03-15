@@ -3,15 +3,20 @@ import os
 import pandas as pd
 import json
 import datetime
-
+import re
+import uuid
+import ast
 
 DB_USER = "EDI_TEST"
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
+# Dynamically locate Wallet and Instant Client based on the project's current folder
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Path to the unzipped wallet folder
-WALLET_DIR = "/Users/himanth/PCB/main_ST_AI/Main/AI-Enabled-Ticketing-System-main 4/Wallet_EDI"
+WALLET_DIR = os.path.join(BASE_DIR, "Wallet_EDI")
 # Path to the extracted Instant Client (Thick Mode)
-IC_DIR = "/Users/himanth/PCB/main_ST_AI/Main/AI-Enabled-Ticketing-System-main 4/instantclient"
+IC_DIR = os.path.join(BASE_DIR, "instantclient")
 
 # Service name from tnsnames.ora
 DSN = "pocediadw_high"
@@ -192,9 +197,6 @@ def save_ticket(ticket_data):
     c.execute("SELECT 1 FROM tickets WHERE ticket_id = :1", (ticket_data['ticket_id'],))
     exists = c.fetchone()
     
-    import re
-
-    
     res_timer_raw = ticket_data.get('resolution_time')
     if isinstance(res_timer_raw, str):
         match = re.search(r'\d+', res_timer_raw)
@@ -226,21 +228,21 @@ def save_ticket(ticket_data):
                        auto_tags=:10, instance=:11, deployment_type=:12, 
                        ticket_type=:13, version=:14, connected_systems=:15, customer_case_ref=:16, 
                        hypercare=:17, assigned_agent_id=:18, rca=:19, updated_at=SYSTIMESTAMP WHERE ticket_id=:20"""
-            no_attach_params = (
+            update_params = (
                 params[0], params[1], params[2], params[3], params[4],
                 params[5], params[6], params[7], params[8],
                 params[10], params[11], params[12], params[13], params[14],
                 params[15], params[16], params[17], params[18], params[19],
                 ticket_data['ticket_id']
             )
-            c.execute(query, no_attach_params)
         else:
             query = """UPDATE tickets SET description=:1, topic=:2, priority=:3, status=:4, 
                        resolution_time=:5, user_id=:6, email=:7, subject=:8, partner=:9, 
                        attachment=:10, auto_tags=:11, instance=:12, deployment_type=:13, 
                        ticket_type=:14, version=:15, connected_systems=:16, customer_case_ref=:17, 
                        hypercare=:18, assigned_agent_id=:19, rca=:20, updated_at=SYSTIMESTAMP WHERE ticket_id=:21"""
-            c.execute(query, params)
+            update_params = params
+        c.execute(query, update_params)
     else:
         # Reorder params for INSERT
         insert_params = (
@@ -283,8 +285,6 @@ def update_ticket_attachment(ticket_id, attachment_json):
             conn.close()
 
 def create_ai_ticket(user_email, user_name, subject, chat_history, topic="Other"):
-
-    import uuid
     ticket_id = f"AI-{str(uuid.uuid4())[:8]}"
     ticket_data = {
         "ticket_id": ticket_id, "description": chat_history, "subject": subject,
@@ -296,6 +296,16 @@ def create_ai_ticket(user_email, user_name, subject, chat_history, topic="Other"
     return ticket_id
 
 
+def _parse_agent_data(d):
+    """Helper to parse JSON fields in agent data."""
+    for key in ['topics', 'instances']:
+        val = d.get(key)
+        if val and isinstance(val, str):
+            try: d[key] = json.loads(val)
+            except: d[key] = []
+        elif not val: d[key] = []
+    return d
+
 def get_all_agents():
     conn = None
     try:
@@ -306,13 +316,7 @@ def get_all_agents():
         agents = []
         for row in c.fetchall():
             d = dict(zip(columns, row))
-            for key in ['topics', 'instances']:
-                val = d.get(key)
-                if val and isinstance(val, str):
-                    try: d[key] = json.loads(val)
-                    except: d[key] = []
-                elif not val: d[key] = []
-            agents.append(d)
+            agents.append(_parse_agent_data(d))
         return agents
     finally:
         if conn: conn.close()
@@ -324,18 +328,11 @@ def get_agent_by_id(agent_id):
         c = conn.cursor()
         c.execute("SELECT * FROM agents WHERE agent_id=:1", (agent_id,))
         row = c.fetchone()
-        agent = None
         if row:
             columns = [col[0].lower() for col in c.description]
             d = dict(zip(columns, row))
-            for key in ['topics', 'instances']:
-                val = d.get(key)
-                if val and isinstance(val, str):
-                    try: d[key] = json.loads(val)
-                    except: d[key] = []
-                elif not val: d[key] = []
-            agent = d
-        return agent
+            return _parse_agent_data(d)
+        return None
     finally:
         if conn: conn.close()
 
@@ -346,18 +343,11 @@ def get_agent_by_email(email):
         c = conn.cursor()
         c.execute("SELECT * FROM agents WHERE email=:1", (email,))
         row = c.fetchone()
-        agent = None
         if row:
             columns = [col[0].lower() for col in c.description]
             d = dict(zip(columns, row))
-            for key in ['topics', 'instances']:
-                val = d.get(key)
-                if val and isinstance(val, str):
-                    try: d[key] = json.loads(val)
-                    except: d[key] = []
-                elif not val: d[key] = []
-            agent = d
-        return agent
+            return _parse_agent_data(d)
+        return None
     finally:
         if conn: conn.close()
 
@@ -458,17 +448,14 @@ def get_chat_history(ticket_id):
         rows = c.fetchall()
         history = []
         for r in rows:
-            history.append({"sender": r[0], "message": r[1], "timestamp": r[2], "attachment": r[3]})
+            history.append({"sender": r[0], "author": r[0], "message": r[1], "timestamp": r[2], "attachment": r[3]})
         return history
     finally:
         if conn: conn.close()
 
 def get_ticket_chat_history(ticket_id):
-    raw = get_chat_history(ticket_id)
-    normalized = []
-    for item in raw:
-        normalized.append({"author": item["sender"], "message": item["message"], "timestamp": item["timestamp"], "attachment": item["attachment"]})
-    return normalized
+    # Backward compatibility wrapper
+    return get_chat_history(ticket_id)
 
 
 def get_admin_analytics():
@@ -782,7 +769,6 @@ def get_tag_analytics():
              
              # Parse
              try:
-                 import ast
                  # If list string
                  if tags.strip().startswith('['):
                      t_list = ast.literal_eval(tags)
