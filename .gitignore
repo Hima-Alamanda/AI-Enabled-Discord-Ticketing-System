@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Streamlit
+.streamlit/
+secrets.toml
+
+# AI / Data
+.env
+chroma_db/
+knowledge_base/data/
+knowledge_base/solved_tickets/
+tickets.db
+*.log
+
+# OS
+.DS_Store
+
+# Oracle Defaults
+Wallet_EDI/
+instantclient/
