@@ -1,4 +1,3 @@
-import streamlit as st
 import base64
 import os
 import smtplib
@@ -90,8 +89,7 @@ def check_login(username, password):
     return None
 
 def load_css():
-    with open("styles.css", "r") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    pass
 
 HTML_TEMPLATES = {}
 
@@ -124,12 +122,12 @@ def get_logo_html():
 
 def send_email(to_email, subject, body):
     # Check for secrets
-    if "email" not in st.secrets:
-        st.warning(" Email not configured! Create `.streamlit/secrets.toml` to enable sending.")
+    if "GMAIL_USER" not in os.environ or "GMAIL_PASSWORD" not in os.environ:
+        print(" Email not configured! Set GMAIL_USER and GMAIL_PASSWORD environment variables to enable sending.")
         return False
 
-    sender_email = st.secrets["email"]["gmail_user"]
-    sender_password = st.secrets["email"]["gmail_password"]
+    sender_email = os.environ["GMAIL_USER"]
+    sender_password = os.environ["GMAIL_PASSWORD"]
 
     msg = MIMEMultipart()
     msg['From'] = sender_email
@@ -146,7 +144,7 @@ def send_email(to_email, subject, body):
         server.quit()
         return True
     except Exception as e:
-        st.error(f"Failed to send email: {str(e)}")
+        print(f"Failed to send email: {str(e)}")
         return False
 
 def strip_html(text):

@@ -1,4 +1,3 @@
-streamlit
 pandas
 chromadb
 ollama
@@ -11,11 +10,9 @@ uvicorn
 pdfplumber
 pytesseract
 Pillow
-streamlit-autorefresh
 google-generativeai
 python-dotenv
 sentence-transformers
-streamlit-quill
 python-docx
 oracledb
 oci

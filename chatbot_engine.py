@@ -623,4 +623,4 @@ def _format_history_for_prompt(history: list, max_turns: int = 6) -> str:
         role = "User" if msg['role'] == 'user' else "Assistant"
         content = msg['content'][:400]  # Truncate long messages
         lines.append(f"{role}: {content}")
-    return "=== CONVERSATION HISTORY ===\n" + "\n".join(lines)
+    return "CONVERSATION HISTORY\n" + "\n".join(lines)

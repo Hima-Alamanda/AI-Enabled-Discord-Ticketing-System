@@ -5,18 +5,19 @@ import traceback
 import asyncio
 import json
 import uuid
+
+# Load environment variables early so ADW config is present
+from dotenv import load_dotenv
+load_dotenv()
+
 import database
 import agent_manager
 import utils
 from discord import ui
-from dotenv import load_dotenv
 from datetime import datetime
 from chatbot_engine import get_chatbot_response
 import chatbot_engine
 import oci_storage
-
-# Load environment variables
-load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 

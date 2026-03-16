@@ -282,7 +282,7 @@ def load_documents_to_db():
             conn.commit()
 
             
-        print(f"✅ Success: Indented {len(articles)} documents from cloud storage.")
+        print(f"Success: Indented {len(articles)} documents from cloud storage.")
 
     except Exception as e:
         print(f"Error during bulk database ingestion: {e}")
