@@ -1,18 +1,3 @@
-"""
-Clarification Engine — decides when to clarify and generates targeted questions.
-
-Responsibilities:
-  • Determines if the current issue understanding warrants clarification,
-    answering, or escalation (CLARIFY / ANSWER / ESCALATE).
-  • Generates precise, narrowing clarification questions based on what
-    is specifically missing (not generic "can you provide more details").
-  • Builds clarification option lists from candidate domains.
-  • Stores clarification context in the snapshot for session continuity.
-
-This engine uses NO LLM calls — it is fully rule-based for speed and
-determinism.
-"""
-
 import logging
 import json
 import re
@@ -23,115 +8,17 @@ log = logging.getLogger("ClarificationEngine")
 
 # CONSTANTS / THRESHOLDS
 
-# Issue understanding confidence below this → clarify
+# Issue understanding confidence below this - clarify
 ISSUE_CONFIDENCE_THRESHOLD = 0.45
 
-# KB confidence: if low and issue is also vague → escalate or clarify
+# KB confidence: if low and issue is also vague - escalate or clarify
 KB_LOW_CONFIDENCE_ESCALATION_THRESHOLD = 0.25
 
 # Maximum clarification rounds before auto-escalating
 MAX_CLARIFICATION_ROUNDS = 3
 
-# CLARIFICATION QUESTION TEMPLATES (by missing slot)
 
-SLOT_QUESTIONS = {
-    "system_or_application": {
-        "default": "Which system or application is affected?",
-        "access_or_login": (
-            "Which account are you trying to access: "
-            "**Windows login**, **SAP**, **VPN**, **Outlook**, or another application?"
-        ),
-        "performance": (
-            "Which application or system is running slow? "
-            "For example: **SAP**, **Outlook**, **your laptop**, **VPN**, or **a browser**?"
-        ),
-        "error_or_crash": (
-            "Which application is showing the error or crashing? "
-            "For example: **SAP**, **Outlook**, **Teams**, **a browser**, or another application?"
-        ),
-        "network_connectivity": (
-            "Is this a **VPN connection issue**, **Wi-Fi/Ethernet** problem, "
-            "or affecting a specific **application**?"
-        ),
-        "email_calendar": (
-            "Is this related to **Outlook desktop**, **Outlook Web (OWA)**, "
-            "or another email application?"
-        ),
-        "installation": (
-            "Which software are you trying to install? "
-            "Please share the application name."
-        ),
-    },
-    "error_detail": {
-        "default": (
-            "What is the exact error message or error code you're seeing? "
-            "This will help me find the right solution."
-        ),
-    },
-    "affected_component": {
-        "default": (
-            "Is this happening on your **laptop/desktop**, inside a **browser**, "
-            "within a **business application (SAP, Oracle, etc.)**, or on your **VPN**?"
-        ),
-    },
-}
 
-# Additional narrowing questions for known applications with vague symptoms
-APP_NARROWING_QUESTIONS = {
-    "sap": (
-        "To help you with SAP, could you tell me more specifically what's happening? "
-        "For example:\n"
-        "• **Login/access issue** (can't log in, account locked)\n"
-        "• **Transaction error** (specific error in a transaction)\n"
-        "• **GUI not launching** (SAP GUI won't open)\n"
-        "• **Performance issue** (SAP is slow or freezing)"
-    ),
-    "outlook": (
-        "To help you with Outlook, could you describe what's happening more specifically?\n"
-        "• **Can't open/launch Outlook**\n"
-        "• **Sending/receiving errors**\n"
-        "• **Mailbox full or storage issue**\n"
-        "• **Calendar or meeting problems**\n"
-        "• **Performance (slow, freezing)**"
-    ),
-    "vpn": (
-        "To help with VPN, could you tell me:\n"
-        "• **Can't connect at all**\n"
-        "• **Keeps disconnecting**\n"
-        "• **Connected but can't access resources**\n"
-        "• **Slow when connected**\n"
-        "• **Getting a specific error message** (if so, what does it say?)"
-    ),
-    "teams": (
-        "I can help with Microsoft Teams. What specifically is failing?\n"
-        "• **Audio/video issue** (mic/camera not working)\n"
-        "• **Meeting connection** (can't join or host)\n"
-        "• **Sign-in error** (modern auth or cache issue)\n"
-        "• **Screen sharing** (blocked or black screen)\n"
-        "• **Chat/Presence** (status not updating)"
-    ),
-    "printer": (
-        "To troubleshoot your printer, please select the symptom:\n"
-        "• **Paper jam or hardware error**\n"
-        "• **Offline / can't find printer**\n"
-        "• **Print quality / streaks**\n"
-        "• **Blank pages / stuck in queue**"
-    ),
-    "hardware": (
-        "I see this is a hardware-related issue. What is affected?\n"
-        "• **Blue screen / system crash**\n"
-        "• **Battery / power won't start**\n"
-        "• **Docking station / monitors**\n"
-        "• **Keyboard or mouse unresponsive**"
-    ),
-    "mfa": (
-        "For Multi-Factor Authentication (MFA) issues, please specify:\n"
-        "• **Not receiving push / SMS**\n"
-        "• **New phone / reset needed**\n"
-        "• **App won't open / error code**\n"
-        "• **Bypass code request**"
-    ),
-}
 
 
 # MAIN CLASS
@@ -253,17 +140,24 @@ class ClarificationEngine:
                                   history: list = None) -> dict:
         """
         Returns a dictionary containing both 'question' and 'options'.
-        Tries rule-based logic first, then falls back to dynamic LLM.
+        Now prioritizes Dynamic LLM generation for a more natural, senior engineer feel.
         """
-        # Try Rule-Based
+        # 1. TRY DYNAMIC FIRST (Modern "LLM-First" approach)
+        dynamic_package = self.generate_dynamic_clarification(issue, retrieval_result, history)
+        
+        # If dynamic succeeded and is NOT just the generic fallback
+        if dynamic_package and dynamic_package.get("question") != "Could you provide more details?":
+            return dynamic_package
+
+        # 2. FALLBACK to Rule-Based if Dynamic is vague or failed
         rb_question = self._try_rule_based_question(issue, retrieval_result)
         rb_options = self._try_rule_based_options(issue, retrieval_result)
         
         if rb_question and rb_options:
+            log.info("Dynamic clarification was vague; falling back to rule-based logic.")
             return {"question": rb_question, "options": rb_options}
             
-        # Fallback to Dynamic
-        return self.generate_dynamic_clarification(issue, retrieval_result, history)
+        return dynamic_package
 
     def build_clarification_question(self, issue: dict,
                                       retrieval_result: dict,
@@ -278,56 +172,12 @@ class ClarificationEngine:
         return package.get("question", "Could you provide more details?")
 
     def _try_rule_based_question(self, issue: dict, retrieval_result: dict) -> Optional[str]:
-        """Existing rule-based logic for specific apps."""
+        """Minimal fallback questions for critical missing information."""
         missing_slots = issue.get("missing_slots", [])
-        issue_type = issue.get("issue_type")
-        application = issue.get("application")
-        system = issue.get("system")
-        symptom = issue.get("symptom")
-        competing_domains = retrieval_result.get("competing_domains", [])
-
-        error_code = issue.get("error_code")
-        if error_code and (not application and not system):
-            return (
-                f"I detected error code **{error_code}**. "
-                f"Which application or system were you using when this appeared?"
-            )
-
-        # ONLY if we still have ambiguous flags or very generic symptom
-        is_vague = not symptom or symptom in ("not_working", "error_displayed")
-        
-        if (application or system) and (not missing_slots or is_vague):
-            known = (application or system or "").lower()
-            for app_key, question in APP_NARROWING_QUESTIONS.items():
-                if app_key in known:
-                    # Logic check: if user already provided one of the bullet points, don't ask again
-                    if symptom and any(kw in symptom.lower() for kw in ["disconnect", "connect", "access", "slow", "error"]):
-                        # They already gave a specific symptom, skip narrowing question
-                        continue
-                    return question
-            # No specific rule-based narrowing for this app -> Fall back to dynamic LLM
-            return None
-
-        ifCompeting = retrieval_result.get("competing_domains", [])
-        if ifCompeting and len(ifCompeting) > 1 and not (application or system):
-            domain_list = self._format_domain_list(ifCompeting)
-            return f"I see possible matches for {domain_list}. Which one are you having trouble with?"
-
+        if "system_or_application" in missing_slots:
+            return "Which system or application are you experiencing this issue on?"
         if missing_slots:
-            slot = missing_slots[0]
-            # Custom questions based on issue_type
-            if slot == "system_or_application":
-                if issue_type == "access_or_login":
-                    return SLOT_QUESTIONS["system_or_application"]["access_or_login"]
-                return SLOT_QUESTIONS["system_or_application"]["default"]
-            
-            if slot == "error_detail":
-                # Removed hardcoded default question to allow dynamic fallback
-                return None
-                
-            if slot == "affected_component":
-                return SLOT_QUESTIONS["affected_component"]["default"]
-
+            return "Could you provide more specific details about this issue?"
         return None
 
     # Public: build_clarification_options
@@ -342,58 +192,11 @@ class ClarificationEngine:
         return package.get("options", ["Other"])
 
     def _try_rule_based_options(self, issue: dict, retrieval_result: dict) -> Optional[list]:
-        """Existing rule-based button logic."""
-        options = []
-        missing_slots = issue.get("missing_slots", [])
+        """Minimal fallback button logic."""
         competing = retrieval_result.get("competing_domains", [])
-        application = issue.get("application")
-        system = issue.get("system")
-        issue_type = issue.get("issue_type")
-
-        # Determine target slot the same way build_clarification_question does
-        target_slot = None
-        if missing_slots:
-            target_slot = missing_slots[0]
-
-        is_vague = not issue.get("symptom") or issue.get("symptom") in ("not_working", "error_displayed")
-        if (application or system) and (not missing_slots or is_vague):
-            # Narrowing down symptom for a known app
-            known_app = (application or system).lower()
-            for app_key, question in APP_NARROWING_QUESTIONS.items():
-                if app_key in known_app:
-                    import re
-                    bullets = re.findall(r'•\s*\*\*?([^*]+)\*\*?', question)
-                    if bullets:
-                        options.extend([b.strip() for b in bullets])
-                    break
-
-        if target_slot == "system_or_application":
-            # Suggest competing domains from KB first
-            if competing:
-                for domain in competing:
-                    options.append(self._domain_to_display_name(domain))
-            
-            # Pad with common apps ONLY if no other context exists at all
-            if not options and not (application or system):
-                for d in ["Windows login", "SAP", "VPN", "Outlook"]:
-                    options.append(d)
-
-        elif target_slot == "error_detail":
-            # Removed hardcoded buttons to force dynamic AI-based options
-            return None
-
-        elif target_slot == "affected_component":
-            options.extend(["Internal Network", "External Website", "Physical Hardware"])
-
-        if not options and competing and len(competing) > 1:
-            for domain in competing:
-                options.append(self._domain_to_display_name(domain))
-
-        if not options and issue.get("error_code"):
-            options.extend(["Technical troubleshooting", "Permissions check", "System check"])
-
-        # Always add "Other" as last option if we have candidates
-        return options if options else None
+        if competing:
+            return [self._domain_to_display_name(d) for d in competing] + ["Other"]
+        return ["Other", "Standard Support"]
 
     # Public: generate_dynamic_clarification (The Universal Brain)
 
@@ -423,9 +226,11 @@ RULES:
 1. QUESTION: Be brief, professional, and DIRECT. Sound like an engineer who is narrowing down the problem.
 2. NO NARRATION: NEVER say "I found solutions for...", "I checked the Knowledge Base", or "I found matches."
 3. EXAMPLES: 
-   - Good: "Which system is affected: SAP or Outlook?"
+   - Good: "To help you with SAP, are you experiencing a login failure or an error within a specific transaction?"
+   - Good: "Is this issue limited to Microsoft Teams, or is it affecting your entire internet connection?"
    - Bad: "I found solutions for SAP and Outlook. Which one are you using?"
-4. OPTIONS: These will be Discord buttons. Keep them short (max 20 chars).
+4. OPTIONS: These will be Discord buttons. Keep them short (max 20 chars). Use technical "Paths" where possible.
+   - Example: ["SAP Login Issue", "SAP Transaction Error", "Other"]
 5. TARGET: Help the user identify the correct technical path.
 
 Return ONLY JSON:
@@ -438,10 +243,13 @@ Return ONLY JSON:
 {history_context}
 User Issue: {issue.get('raw_message', 'Unknown')}
 Identified System: {issue.get('system') or issue.get('application') or 'Unknown'}
+Symptom: {issue.get('symptom') or 'Generic/Vague'}
 Competing Domains Discovered: {", ".join(competing)}
 
 Potential KB Solutions:
 {kb_summary}
+
+Missing Information: {", ".join(issue.get('missing_slots', []))}
 
 Generate JSON clarification:"""
 

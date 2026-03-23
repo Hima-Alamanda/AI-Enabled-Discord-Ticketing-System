@@ -11,7 +11,7 @@ ENV/
 .streamlit/
 secrets.toml
 
-# AI / Data
+# Data
 .env
 chroma_db/
 knowledge_base/data/

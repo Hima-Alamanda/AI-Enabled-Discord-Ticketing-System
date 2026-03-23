@@ -1,19 +1,3 @@
-"""
-Issue Understanding Agent — structured issue extraction + ambiguity detection.
-
-Responsibilities:
-  • Extracts structured issue fields from user messages (issue_type, symptom,
-    system, application, device, error_code, etc.).
-  • Merges new fields with existing issue snapshot context (no overwriting
-    strong prior context with weaker guesses).
-  • Detects missing critical slots for safe troubleshooting.
-  • Detects ambiguity flags (generic references, vague symptoms, etc.).
-  • Computes a confidence score for how well the issue is understood.
-
-This agent is purely deterministic/heuristic — it does NOT make LLM calls.
-It is designed to be fast, predictable, and testable.
-"""
-
 import re
 import json
 import logging
@@ -171,66 +155,50 @@ class IssueUnderstandingAgent:
 
     # Public: extract_issue_fields
 
-    def extract_issue_fields(self, message: str, snapshot: dict = None) -> dict:
+    def extract_issue_fields(self, message: str, snapshot: dict = None, history: list = None) -> dict:
         """
         Analyze the user message and return a structured issue dict.
-
-        Returns
-        -------
-        dict with keys:
-            issue_type, symptom, system, application, device, error_code,
-            action_attempted, business_context, missing_slots,
-            ambiguity_flags, confidence, raw_message
+        Combines deterministic regex for speed with semantic LLM for flexibility.
         """
         msg = message.strip()
         msg_low = msg.lower()
         snapshot = snapshot or {}
 
+        # 1. Start with high-speed deterministic extraction
         issue = {
-            "issue_type": None,
-            "symptom": None,
-            "system": None,
-            "application": None,
-            "device": None,
-            "error_code": None,
-            "action_attempted": None,
-            "environmental_context": None,
-            "business_context": None,
+            "issue_type": self._detect_issue_type(msg_low),
+            "symptom": self._detect_symptom(msg_low),
+            "system": self._extract_from_set(msg_low, KNOWN_SYSTEMS),
+            "application": self._extract_from_set(msg_low, KNOWN_APPLICATIONS),
+            "device": self._extract_from_set(msg_low, KNOWN_DEVICES),
+            "error_code": self._extract_error_code(msg),
+            "action_attempted": self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["action_attempted"]),
+            "environmental_context": self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["environmental_context"]),
+            "business_context": self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["business_context"]),
+            "ambiguity_flags": self._detect_ambiguity(msg_low),
             "missing_slots": [],
-            "ambiguity_flags": [],
             "confidence": 0.0,
             "raw_message": msg,
         }
 
-        issue["issue_type"] = self._detect_issue_type(msg_low)
-
-        issue["symptom"] = self._detect_symptom(msg_low)
-
-        issue["system"] = self._extract_from_set(msg_low, KNOWN_SYSTEMS)
-
-        issue["application"] = self._extract_from_set(msg_low, KNOWN_APPLICATIONS)
-
-        issue["device"] = self._extract_from_set(msg_low, KNOWN_DEVICES)
-
-        issue["error_code"] = self._extract_error_code(msg)
-
-        issue["action_attempted"] = self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["action_attempted"])
-        issue["environmental_context"] = self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["environmental_context"])
-        issue["business_context"] = self._detect_pattern(msg_low, SITUATIONAL_CONTEXT_PATTERNS["business_context"])
-
-        issue["ambiguity_flags"] = self._detect_ambiguity(msg_low)
-
+        # 2. Compute initial confidence
         issue["missing_slots"] = self._detect_missing_slots(issue)
-
         issue["confidence"] = self._calculate_confidence(issue)
 
-        log.info(
-            "Issue fields extracted: type=%s symptom=%s system=%s app=%s "
-            "missing=%s ambiguity=%s confidence=%.2f",
-            issue["issue_type"], issue["symptom"], issue["system"],
-            issue["application"], issue["missing_slots"],
-            issue["ambiguity_flags"], issue["confidence"],
-        )
+        # 3. If confidence is low, trigger Semantic Overlay (Phase 2: Flexibility)
+        if issue["confidence"] < 0.65 or "system_or_application" in issue["missing_slots"]:
+            log.info("Rigid confidence low (%.2f). Using Semantic Extraction...", issue["confidence"])
+            semantic = self.semantic_extract_issue_fields(msg, history)
+            if semantic:
+                # Overlay semantic findings onto the structured issue
+                for key in ["issue_type", "symptom", "system", "application", "error_code"]:
+                    if semantic.get(key) and not issue.get(key):
+                        issue[key] = semantic[key]
+                
+                # Re-calculate missing slots and confidence
+                issue["missing_slots"] = self._detect_missing_slots(issue)
+                issue["confidence"] = self._calculate_confidence(issue)
+                log.info("Semantic overlay complete. New confidence: %.2f", issue["confidence"])
 
         return issue
 

@@ -149,12 +149,8 @@ Extract the ticket details accurately including impact and assessment logic base
     except Exception as e:
         log.error("Ticket extraction failed: %s", e)
 
-    # Robust fallback if extraction fails
-    error_match = re.search(r'([A-Z][a-z]+Error:.*)', user_message)
-    subject = error_match.group(1)[:60] if error_match else user_message[:60]
-    
     return {
-        "subject": subject or "Technical Support Inquiry",
+        "subject": user_message[:60] if user_message else "Technical Support Inquiry",
         "description": user_message or "Ticket created from conversation context.",
         "topic": "Other (Custom...)",
         "impact": "User productivity affected.",
@@ -281,23 +277,8 @@ def get_chatbot_response(
             snapshot["stage"] = S["TROUBLESHOOTING"]
             state.state = S["TROUBLESHOOTING"]
 
-        # Use full_query (msg + OCR) for extraction
-        current_issue = issue_understanding_agent.extract_issue_fields(full_query, snapshot)
-        
-        # If rule-based is not confident or missing system, use LLM logic
-        if current_issue.get("confidence", 0) < 0.5 or "system_or_application" in current_issue.get("missing_slots", []):
-            log.info("Rule-based understanding low (conf=%s). Triggering semantic extraction...", current_issue.get("confidence"))
-            semantic_fields = issue_understanding_agent.semantic_extract_issue_fields(full_query, history)
-            if semantic_fields:
-                log.info("Semantic overlay found: %s", semantic_fields.get("system"))
-                # Overlay semantic results onto current issue
-                for k, v in semantic_fields.items():
-                    if v and k != "missing_slots":
-                        current_issue[k] = v
-                
-                # Re-calculate missing slots and confidence with new fields
-                current_issue["missing_slots"] = issue_understanding_agent._detect_missing_slots(current_issue)
-                current_issue["confidence"] = issue_understanding_agent._calculate_confidence(current_issue)
+        # Use full_query (msg + OCR) for extraction — now handles its own semantic fallback logic
+        current_issue = issue_understanding_agent.extract_issue_fields(full_query, snapshot, history)
 
         issue = issue_understanding_agent.merge_issue_context(current_issue, snapshot)
         

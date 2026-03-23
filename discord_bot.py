@@ -18,6 +18,7 @@ from datetime import datetime
 from chatbot_engine import get_chatbot_response
 import chatbot_engine
 import oci_storage
+import controller
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -120,47 +121,52 @@ class TicketSystemView(ui.View):
             # Defer immediately to prevent "This interaction failed" while OCI upload runs
             await interaction.response.defer(ephemeral=False)
             
-            # Create Ticket Logic (AIdatetime format)
-            ticket_id = f"AI{datetime.now().strftime('%Y%m%d%H%M%S')}"
-            ticket_data = {
-                "ticket_id": ticket_id,
-                "subject": self.subject,
-                "description": self.description,
-                "topic": self.topic, # Stored as 'topic' in DB
-                "priority": self.priority,
-                "status": "Open",
-                "user_id": self.user.display_name,
-                "email": f"{self.user.name}@discord.com",
-                "attachment": None
-            }
-
-            # Handle OCI Attachment Upload (Gently)
-            if self.attachment_bytes and self.filename:
-                try:
-                    print(f"[DiscordBot] ATTEMPTING OCI UPLOAD: {self.filename} ({len(self.attachment_bytes)} bytes)", flush=True)
-                    object_name = f"tickets/{ticket_id}/{self.filename}"
-                    content_type = oci_storage.get_content_type(self.filename)
-                    await asyncio.to_thread(oci_storage.upload_file, self.attachment_bytes, object_name, content_type)
-                    # Store as JSON list for Streamlit compatibility
-                    ticket_data["attachment"] = json.dumps([object_name])
-                    print(f"[DiscordBot] SUCCESS: Uploaded {self.filename} to OCI: {object_name}", flush=True)
-                except Exception as e:
-                    print(f"[DiscordBot] ERROR: OCI Upload Failed: {e}", flush=True)
-                    traceback.print_exc()
-
-            # Assign Agent (Gently)
-            assigned_agent_id = None
+            # Use Centralized Controller for Ticket Creation
             try:
-                assigned_agent_id = await asyncio.to_thread(agent_manager.assign_agent, ticket_data)
-                ticket_data["assigned_agent_id"] = assigned_agent_id
-            except Exception as e:
-                print(f"[DiscordBot] ERROR: Agent Assignment Failed: {e}", flush=True)
+                # 1. Prepare attachment metadata if uploaded
+                attachment_json = None
+                if self.attachment_bytes and self.filename:
+                    print(f"[DiscordBot] ATTEMPTING OCI UPLOAD: {self.filename}", flush=True)
+                    object_name = f"tickets/pending/{self.filename}" # Placeholder, controller might rename? or keep it simple.
+                    # Wait, the bot generates ticket_id. I should let controller do it or pass one.
+                    # Controller generates it. So I should upload AFTER I have an ID? 
+                    # Actually, I'll let the controller do the ID, and I'll update the attachment field later if needed, 
+                    # OR I'll generate a temporary ID/Folder.
+                    
+                    # For now, let's keep the upload logic in the bot since it has the bytes, 
+                    # but I'll pass the result to the controller.
+                    try:
+                        # Since we don't have the ticket_id yet, we use a temp prefix or the issue_id
+                        folder = self.issue_id or "misc"
+                        object_name = f"tickets/{folder}/{self.filename}"
+                        content_type = oci_storage.get_content_type(self.filename)
+                        await asyncio.to_thread(oci_storage.upload_file, self.attachment_bytes, object_name, content_type)
+                        attachment_json = json.dumps([object_name])
+                    except Exception as e:
+                        print(f"[DiscordBot] Attachment upload failed: {e}")
 
-            # Save to DB (Gently)
-            try:
-                await asyncio.to_thread(database.save_ticket, ticket_data)
+                # 2. Call controller to create ticket
+                ticket_data = await asyncio.to_thread(
+                    controller.create_ticket,
+                    description=self.description,
+                    user_id=self.user.display_name,
+                    email=f"{self.user.name}@discord.com",
+                    subject=self.subject,
+                    priority=self.priority,
+                    topic=self.topic,
+                    attachment=attachment_json,
+                    ticket_type="AI Assessment",
+                    issue_id=self.issue_id
+                )
+                ticket_id = ticket_data['ticket_id']
+                print(f"[DiscordBot] Ticket created via controller: {ticket_id}")
+
             except Exception as e:
-                print(f"[DiscordBot] ERROR: DB Save Failed: {e}", flush=True)
+                print(f"[DiscordBot] ERROR: Centralized ticket creation failed: {e}", flush=True)
+                traceback.print_exc()
+                await interaction.followup.send("I failed to create the ticket. Please try again or contact an admin.")
+                return
+
 
             # Store full conversation history (Gently)
             if self.issue_id:
@@ -187,6 +193,7 @@ class TicketSystemView(ui.View):
 
             # Final Embed
             agent_name = "a technician"
+            assigned_agent_id = ticket_data.get('assigned_agent_id')
             if assigned_agent_id:
                 try:
                     agent = await asyncio.to_thread(database.get_agent_by_id, assigned_agent_id)

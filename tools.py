@@ -96,11 +96,11 @@ def escalate_to_human(reason, email, chat_history=None):
         # Force Assignment if not assigned by controller
         if not ticket.get('assigned_agent_id'):
             import agent_manager
-            import database
             agent_id = agent_manager.assign_agent(ticket)
             if agent_id:
-                database.update_ticket(ticket_id, assigned_agent_id=agent_id, status='Open')
-                ticket['assigned_agent_id'] = agent_id 
+                ticket['assigned_agent_id'] = agent_id
+                ticket['status'] = 'Open'
+                controller.update_ticket(ticket)
 
         return {
             "status": "success",

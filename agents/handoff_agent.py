@@ -1,17 +1,3 @@
-"""
-Handoff Agent — generates structured technician handoff summaries.
-
-Responsibilities:
-  • Takes an issue snapshot (timeline, subject, topic, etc.) and produces
-    a professional 5-section summary for a human technician.
-  • Extracts key fields (technician_action, troubleshooting_summary) from
-    the AI-generated summary for Discord embed display.
-  • Provides a robust fallback when the AI summary service is unavailable.
-
-This agent uses OCI GenAI for the summary generation.  The prompt and
-parsing logic are fully owned here.
-"""
-
 import re
 import logging
 import oci_genai

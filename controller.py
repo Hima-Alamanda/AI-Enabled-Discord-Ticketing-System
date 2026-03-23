@@ -7,57 +7,56 @@ from sla_manager import get_sla_status
 from datetime import datetime
 import agent_manager
 
-def create_ticket(description, user_id, email, priority="Medium", topic=None, instance=None, ticket_type="Standard"):
+def create_ticket(description, user_id, email, subject="Technical Support Request", 
+                  priority="Medium", topic=None, instance="PROD - Production", 
+                  ticket_type="Standard", attachment=None, **kwargs):
     """
-    Creates a new ticket with auto-tagging.
-    Returns the created ticket dictionary.
+    Centralized ticket creation logic.
+    Supports auto-tagging, agent assignment, and escalation evaluation.
     """
-    # Auto-tagging if not provided
+    # 1. Auto-tagging / Field Prediction if not provided
     if not topic:
         topic = predict_topic(description)
         
     predicted_priority = predict_severity(description)
     final_priority = predicted_priority if predicted_priority else priority
     
-    # Generate ID based on source
-    # Format: AIYYYYMMDDHHMM (for AI/Chat) or YYYYMMDDHHMM (for Standard)
-    now_str = datetime.now().strftime('%Y%m%d%H%M%S') # precise datetime
-    
-    if ticket_type == "Live Chat" or ticket_type == "AI Assessment":
-        # Format: AI<datetime> (as requested)
+    # 2. Generate Standard ID based on source
+    now_str = datetime.now().strftime('%Y%m%d%H%M%S')
+    if ticket_type in ["AI Assessment", "Live Chat"] or str(ticket_type).startswith("AI"):
         ticket_id = f"AI{now_str}"
     else:
-        # Format: <datetime> (as requested)
         ticket_id = f"{now_str}"
     
-    # Check for duplicate (unlikely with seconds, but good practice) or add suffix if needed
-    # ticket_id += f"-{uuid.uuid4().hex[:4].upper()}" # Remove UUID suffix to strictly follow request?
-    # User asked for "datetime" ID. Let's keep it simple but adding a small random suffix prevents collision if 2 tickets in 1 sec.
-    # User request: "like AIdatetime... if ticket is submitted the ticket id be datetime"
-    # I will stick to the request but maybe add a small random suffix if collision control is needed, but for now exact request.
-    # Actually, adding a random digit is safer.
-    # But let's stick to the request: "AIdatetime" / "datetime"
-    pass
-    
-    # SLA calculation (mock for now, usually done on retrieval or background job)
-    resolution_time = "24 Hours" # Default
-    
+    # 3. Assemble Ticket Data
     ticket_data = {
         "ticket_id": ticket_id,
+        "subject": subject,
         "description": description,
         "topic": topic,
         "priority": final_priority,
         "status": "Open",
-        "resolution_time": resolution_time,
         "user_id": user_id,
         "email": email,
         "instance": instance,
         "ticket_type": ticket_type,
+        "attachment": attachment,
+        "deployment_type": kwargs.get("deployment_type", "Cloud"),
+        "version": kwargs.get("version", "1.0"),
+        "connected_systems": kwargs.get("connected_systems", "None"),
+        "customer_case_ref": kwargs.get("customer_case_ref", "None"),
+        "hypercare": kwargs.get("hypercare", "No"),
+        "rca": kwargs.get("rca", "None"),
+        "resolution_time": kwargs.get("resolution_time", 0),
+        "partner": kwargs.get("partner", "Internal"),
         "created_at": datetime.now().isoformat(' ', 'seconds'),
         "updated_at": datetime.now().isoformat(' ', 'seconds')
     }
     
-    # Assign Agent
+    # Allow explicit overrides from kwargs for any field
+    ticket_data.update(kwargs)
+    
+    # 4. Assign Agent
     assigned_agent_id = agent_manager.assign_agent(ticket_data)
     ticket_data['assigned_agent_id'] = assigned_agent_id
     

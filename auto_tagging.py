@@ -207,19 +207,17 @@ def analyze_ticket_with_ai(text):
                 }
     except Exception as e:
         print(f"OCI AI Analysis Failed: {e}")
-    
-    # Simple Fallback if AI fails completely (using the basic field predictors)
-    return {
-        "fields": {
-            "instance": predict_instance(text),
-            "deployment": predict_deployment(text),
-            "type": predict_ticket_type(text),
-            "topic": predict_topic(text),
-            "severity": predict_severity(text),
-            "company": "Internal"
-        },
-        "tags": [] # No tags if AI fails 
-    }
+        return {
+            "fields": {
+                "instance": predict_instance(text),
+                "deployment": predict_deployment(text),
+                "type": predict_ticket_type(text),
+                "topic": predict_topic(text),
+                "severity": predict_severity(text),
+                "company": "Internal"
+            },
+            "tags": []
+        }
 
 
 def predict_topic(text):
@@ -287,7 +285,7 @@ def extract_entities_from_text(text):
     return {"all_tags": res.get('tags', [])}
 
 
-# Removed _fallback_tag_extraction as it is no longer necessary with advanced OCI AI tagging.
+
 
 
 def get_partner_companies():

@@ -1,4 +1,4 @@
-import base64
+
 import os
 import smtplib
 import re
@@ -88,37 +88,7 @@ def check_login(username, password):
             
     return None
 
-def load_css():
-    pass
 
-HTML_TEMPLATES = {}
-
-def load_templates():
-    """Parses assets/components.html and populates HTML_TEMPLATES."""
-    global HTML_TEMPLATES
-    filepath = os.path.join("assets", "components.html")
-    if os.path.exists(filepath):
-        with open(filepath, "r") as f:
-            content = f.read()
-        
-        # Regex to find <template id="...">content</template>
-        # Using DOTALL to match newlines
-        matches = re.findall(r'<template id="(.*?)">(.*?)</template>', content, re.DOTALL)
-        for key, value in matches:
-            HTML_TEMPLATES[key] = value.strip()
-
-# Load templates on module import
-load_templates()
-
-def load_html(filename):
-    """Loads an HTML template from the parsed dictionary."""
-    return HTML_TEMPLATES.get(filename, "")
-
-def get_logo_html():
-    logo_path = "assets/logo2.png"
-    if os.path.exists(logo_path):
-        return f'<img src="data:image/png;base64,{base64.b64encode(open(logo_path, "rb").read()).decode()}" style="height: 48px;">'
-    return ""
 
 def send_email(to_email, subject, body):
     # Check for secrets

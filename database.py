@@ -284,16 +284,7 @@ def update_ticket_attachment(ticket_id, attachment_json):
         if conn:
             conn.close()
 
-def create_ai_ticket(user_email, user_name, subject, chat_history, topic="Other"):
-    ticket_id = f"AI-{str(uuid.uuid4())[:8]}"
-    ticket_data = {
-        "ticket_id": ticket_id, "description": chat_history, "subject": subject,
-        "priority": "Low", "status": "Closed", "user_id": user_name, "email": user_email,
-        "topic": topic, "assigned_agent_id": "AI_ASSISTANT", "ticket_type": "Incident",
-        "deployment_type": "Cloud", "instance": "PROD - Production", "version": "1.0"
-    }
-    save_ticket(ticket_data)
-    return ticket_id
+
 
 
 def _parse_agent_data(d):

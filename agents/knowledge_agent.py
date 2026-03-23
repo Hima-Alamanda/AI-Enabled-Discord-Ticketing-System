@@ -1,7 +1,7 @@
 """
 Knowledge Agent — owns KB retrieval orchestration and confidence scoring.
 
-Responsibilities (Phase 2 + Phase 3):
+Responsibilities:
   • Executes vector search against the KB store (via database + rag_manager).
   • Searches past resolved tickets for similar issues.
   • Scores and filters past tickets by keyword relevance to avoid noise.
@@ -12,9 +12,6 @@ Responsibilities (Phase 2 + Phase 3):
       - No KB hit but strong past-ticket match → "medium"
       - Neither → "low"
 
-Low-level utilities (get_embed_model, database.search_kb_vectors, etc.)
-remain in their original modules.  This agent only orchestrates the
-retrieval flow.
 """
 
 import logging

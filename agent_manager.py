@@ -13,7 +13,7 @@ def init_agents():
     Initializes the database with 16 fake agents + 2 real users if they don't exist.
     """
     existing_agents = database.get_all_agents()
-    # Ideally 18 agents (2 real + 16 fake) but let's just check if we have fewer than expected
+    # Ideally 18 agents (2 real + 16 fake) 
     if len(existing_agents) >= 18:
         return # Already initialized
 
