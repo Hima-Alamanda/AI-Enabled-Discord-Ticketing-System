@@ -1,14 +1,3 @@
-"""
-oci_storage.py
---------------
-Handles all Oracle Cloud Object Storage (OCI Bucket) operations for the
-ticketing system. Replaces local file saves with direct OCI uploads.
-
-Bucket : ticketing-attachments
-Region : us-ashburn-1
-Auth   : ~/.oci/config (DEFAULT profile)
-"""
-
 import io
 import datetime
 import oci
@@ -130,18 +119,7 @@ def generate_download_url(object_name: str, expiry_hours: int = PAR_EXPIRY_HOURS
 
 
 def list_all_files() -> list[dict]:
-    """
-    Lists all objects currently stored in the bucket.
 
-    Returns:
-        List of dicts, each with keys:
-            - name        : object path in the bucket
-            - size_bytes  : file size in bytes
-            - size_kb     : file size in KB (rounded)
-            - modified    : last modified datetime string
-            - ticket_id   : extracted from the object name (if pattern matches)
-            - display_name: just the filename portion
-    """
     client = _get_client()
     files = []
 

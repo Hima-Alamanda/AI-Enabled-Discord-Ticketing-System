@@ -1,18 +1,3 @@
-"""
-Support Orchestrator — top-level routing and coordination.
-
-Responsibilities:
-  • First-pass heuristic triage (greeting / closure / status / escalation).
-  • Delegates to ContinuityAgent for issue-session decisions.
-  • Delegates to IntentAgent for LLM-based intent classification
-    when a technical / followup / escalation message is detected.
-  • Returns a decision dict that chatbot_engine uses to decide
-    which downstream actions to run (KB search, ticket extraction, etc.).
-
-This module makes exactly ONE LLM call at most (via IntentAgent).
-All other routing is pure heuristic.
-"""
-
 import re
 import logging
 from agents.continuity_agent import ContinuityAgent

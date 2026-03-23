@@ -7,21 +7,15 @@ env/
 venv/
 ENV/
 
-# Streamlit
-.streamlit/
-secrets.toml
-
-# Data
+# Database & Secrets
 .env
-chroma_db/
-knowledge_base/data/
-knowledge_base/solved_tickets/
-tickets.db
+Wallet_EDI/
+instantclient/
+
+# Logs
 *.log
 
 # OS
 .DS_Store
 
-# Oracle Defaults
-Wallet_EDI/
-instantclient/
+README.md
