@@ -12,12 +12,15 @@ Auth   : ~/.oci/config (DEFAULT profile)
 import io
 import datetime
 import oci
+import os
+from dotenv import load_dotenv
 
-
-# OCI CONFIGURATION
-OCI_NAMESPACE   = "id1h3njyvxzi"
-OCI_BUCKET_NAME = "ticketing-attachments"
-OCI_REGION      = "us-ashburn-1"
+# Load the .env file
+load_dotenv()
+# Access the variables
+NAMESPACE = os.getenv("OCI_NAMESPACE")
+BUCKET_NAME = os.getenv("OCI_BUCKET_NAME")
+REGION = os.getenv("OCI_REGION")
 PAR_EXPIRY_HOURS = 24   # Pre-Authenticated Request link valid for 24 hours
 
 # In-memory cache for PAR URLs (object_name -> {url, expiry_time})
