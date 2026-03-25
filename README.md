@@ -15,61 +15,77 @@ This project was developed to revolutionize IT support by moving from reactive t
 *   **Enterprise Security**: Built on Oracle's robust cloud infrastructure for data privacy and high-performance vector operations.
 
 ---
-
 ## System Architecture
 
 The system operates on a modular **"Brain & Body"** paradigm, utilizing a fleet of specialized AI agents built with OCI Generative AI.
 
-### 1. Multi-Agent Orchestration
-The heart of the system is the **Orchestrator**, which manages the following agents:
-*   **Intent Agent**: Analyzes incoming messages to determine if the user is seeking help, checking status, or just chatting.
-*   **Knowledge Agent (RAG Hub)**: Performs semantic search across the Knowledge Base using **Oracle ADW Vector Search**.
-*   **Clarification Engine**: Engages the user with dynamic follow-up questions to gather missing technical details (e.g., Error IDs, System Environment).
-*   **Issue Understanding Agent**: Extracts key entities and technical parameters from messy user descriptions.
-*   **Continuity Agent**: Maintains conversation context over long interactions, ensuring the AI never loses the thread.
-*   **Handoff Agent**: Coordinates the transition to a human technician, providing a concise AI-generated summary of the problem.
+### 1. Multi-Agent Workflow
+Below is the logic flow of how a user request is handled from start to finish:
 
-### 2. Retrievel-Augmented Generation (RAG) Pipeline
-1.  **Ingestion**: Documentation and past tickets are processed and converted into 768-dimensional embeddings using `all-mpnet-base-v2`.
-2.  **Storage**: Vectors are stored in **Oracle Autonomous Database** using native AI Vector Search capabilities.
-3.  **Retrieval**: High-speed similarity search retrieves the most relevant technical articles based on the user's current issue.
+```mermaid
+graph TD
+    A[User Message] --> B{Orchestrator}
+    B --> C[Intent Agent]
+    C -- "General Query" --> D[Knowledge Agent]
+    C -- "Technical Issue" --> E[Issue Understanding Agent]
+    D -- "Solution Found" --> F[Direct AI Response]
+    D -- "Solution Missing" --> G[Clarification Engine]
+    E --> G
+    G -- "Missing Details" --> H[Ask User Follow-up]
+    G -- "Info Complete" --> I[Handoff Agent]
+    I --> J[Ticket Created in DB/Zoho]
+    J --> K[Human Agent Assigned]
+```
 
-> **[DIAGRAM PLACEHOLDER: SYSTEM WORKFLOW]**
+### 2. The AI Agent Roles (The Brains)
+To ensure high accuracy, the system delegates tasks to specialized AI "Personas":
 
+*   **🕵️ Intent Agent**: The "Receptionist." Decides if the user is asking a technical question, checking a ticket status, or just saying "hello."
+*   **📚 Knowledge Agent**: The "Researcher." This agent has read all your technical manuals and past tickets via RAG and fetches the most relevant fix.
+*   **🧐 Clarification Engine**: The "Doctor." If a user says "My SAP is broken," this agent asks, "Which module? Are there error codes? Which environment?"
+*   **🧩 Issue Understanding Agent**: The "Linguist." It translates messy user messages into clean data points (Category, Urgency, System Type).
+*   **🤝 Handoff Agent**: The "Summarizer." When a human needs to take over, this agent writes a professional brief so the technician can fix the issue immediately without re-asking questions.
 
 ---
 
-## Key Features
+## 🔄 How It Works: The User Journey
 
-### Smart Ticketing & Auto-Tagging
+To help stakeholders understand the system, here is how a typical support interaction unfolds:
+
+1.  **Initialization**: A user reports a problem on Discord (e.g., "I can't access Sage Intacct").
+2.  **Semantic Search**: The **Knowledge Agent** instantly searches the Oracle Vector Database. It finds a matching troubleshooting guide.
+3.  **Active Clarification**: If the guide has three possible solutions, the **Clarification Engine** asks the user which specific error they see to narrow it down.
+4.  **Auto-Resolution**: If the user follows the AI's advice and it works, the conversation ends—**saving the company time and money.**
+5.  **Smart Escalation**: If the fix doesn't work, the **Handoff Agent** creates a ticket, predicts its priority (P1-P4), and assigns it to the right team based on the detected topic.
+
+---
+
+## 🛠️ Key Features
+
+### ✨ Smart Ticketing & Auto-Tagging
 *   **Automated Categorization**: Uses LLM-based categorization to predict the `Topic` and `Severity` of a ticket instantly.
 *   **SLA Intelligence**: Real-time SLA tracking with custom countdowns and escalation alerts based on priority.
 *   **Agent Assignment**: Smart routing of tickets to the best-suited human technician based on the issue topic.
 
-### Self-Evolving Knowledge Base
+### 📚 Self-Evolving Knowledge Base
 *   **Ticket-to-KB Promotion**: Once a human technician resolves a unique issue, the system uses AI to summarize the resolution and "promote" it to a permanent KB article.
 *   **Vector Sync**: New KB articles are instantly vectorized and added to the RAG pipeline for future queries, creating a self-learning loop.
 
-###  Dynamic User Experience
-*   **Multi-Platform Flexibility**: Built with a decoupled core, allowing deployment on **Discord**, **Microsoft Teams**, and **Web Portals**.
-*   **Context-Aware UI**: Uses dynamic Discord buttons and menus tailored to the specific technical issue being discussed.
-
 ---
 
-## Technology Stack
+## 🧰 Technology Stack
 
 | Component | Technology |
 | :--- | :--- |
-| **Intelligence** | OCI Generative AI  |
+| **Intelligence** | OCI Generative AI (Llama 3 / Command R / Gemini) |
 | **Database** | Oracle Autonomous Data Warehouse (ADW) |
 | **Vector Search** | Oracle AI Vector Search (Database 23ai) |
 | **Embedding Model** | `all-mpnet-base-v2` (Sentence Transformers) |
 | **Framework** | Python 3.10+, Discord.py |
-| **Orchestration** | Custom Multi-Agent "Brain" Logic |
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 *   `orchestrator.py`: The central hub for message routing and agent management.
 *   `agents/`: Contains the logic for all specialized AI agents (Knowledge, Intent, Handoff, etc.).
@@ -79,9 +95,7 @@ The heart of the system is the **Orchestrator**, which manages the following age
 *   `sla_manager.py`: Monitors and calculates real-time SLA deadlines.
 *   `auto_tagging.py`: AI-driven classification and metadata prediction for support issues.
 
----
-
-## Getting Started
+## ⚙️ Getting Started
 
 ### Prerequisites
 *   OCI Tenancy with Generative AI and ADW instance.
@@ -97,19 +111,29 @@ The heart of the system is the **Orchestrator**, which manages the following age
     ```bash
     pip install -r requirements.txt
     ```
-3.  Configure environmental variables in `.env`:
-    ```env
-    OCI_CONFIG_FILE=~/.oci/config
-    DB_USER=admin
-    DB_PASSWORD=your_password
-    DISCORD_TOKEN=your_token
-    ```
 
 ---
 
-## Roadmap
+## ⚙️ Configuration Guide
+
+The system relies on a `.env` file for secure configuration. Below is a breakdown of the required variables:
+
+| Variable | Description |
+| :--- | :--- |
+| `OCI_CONFIG_FILE` | Path to your OCI config (usually `~/.oci/config`). |
+| `DB_USER` | The admin username for your Oracle ADW instance. |
+| `DB_PASSWORD` | The password for your Oracle ADW instance. |
+| `DB_DSN` | The connection string (TNS Name) from your Wallet. |
+| `DISCORD_TOKEN` | Your unique Discord Bot Token. |
+| `COMPARTMENT_ID` | The OCI Compartment OCID where GenAI is enabled. |
+
+---
+
+## 📅 Roadmap
 *   [ ] **Microsoft Teams Integration**: Full migration to enterprise Teams environment using Azure Bot Service.
 *   [ ] **Advanced Analytics Dashboard**: Real-time visualization of support trends, AI deflection rates, and SLA health.
 
+---
+*Developed as part of the AI-Enabled Intelligent Support Initiative.*
 
 
