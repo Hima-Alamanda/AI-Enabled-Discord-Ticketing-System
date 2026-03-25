@@ -35,7 +35,7 @@ The heart of the system is the **Orchestrator**, which manages the following age
 3.  **Retrieval**: High-speed similarity search retrieves the most relevant technical articles based on the user's current issue.
 
 > **[DIAGRAM PLACEHOLDER: SYSTEM WORKFLOW]**
-> *Recommendation: Place a high-level flowchart here showing the path from User Message -> Orchestrator -> RAG Agent -> Clarification -> Final Response.*
+
 
 ---
 
@@ -43,7 +43,7 @@ The heart of the system is the **Orchestrator**, which manages the following age
 
 ### Smart Ticketing & Auto-Tagging
 *   **Automated Categorization**: Uses LLM-based categorization to predict the `Topic` and `Severity` of a ticket instantly.
-*   **SLA Intelligence**: Real-time SLA tracking with custom countdowns and escalation alerts based on priority (P1-P4).
+*   **SLA Intelligence**: Real-time SLA tracking with custom countdowns and escalation alerts based on priority.
 *   **Agent Assignment**: Smart routing of tickets to the best-suited human technician based on the issue topic.
 
 ### Self-Evolving Knowledge Base
@@ -60,7 +60,7 @@ The heart of the system is the **Orchestrator**, which manages the following age
 
 | Component | Technology |
 | :--- | :--- |
-| **Intelligence** | OCI Generative AI (Llama 3 / Command R / Gemini) |
+| **Intelligence** | OCI Generative AI  |
 | **Database** | Oracle Autonomous Data Warehouse (ADW) |
 | **Vector Search** | Oracle AI Vector Search (Database 23ai) |
 | **Embedding Model** | `all-mpnet-base-v2` (Sentence Transformers) |
@@ -91,7 +91,7 @@ The heart of the system is the **Orchestrator**, which manages the following age
 ### Installation
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/your-repo/ai-ticketing-system.git
+    git clone https://github.com/RajasekharAHN/AI-Enabled-Discord-Ticketing-System.git
     ```
 2.  Install dependencies:
     ```bash
