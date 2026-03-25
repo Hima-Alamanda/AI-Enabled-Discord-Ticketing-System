@@ -6,7 +6,7 @@ A state-of-the-art, multi-agent support ecosystem powered by **Oracle Cloud Infr
 
 ## Project Overview
 
-This project was developed to revolutionize IT support by moving from reactive ticketing to proactive AI assistance. By combining **Natural Language Understanding (NLU)** with **High-Precision RAG**, the system provides instant technical solutions while seamlessly managing human agent handoffs and ticket lifecycles.
+This project was developed to revolutionize IT support by moving from reactive ticketing to proactive AI assistance. The system provides instant technical solutions while seamlessly managing human agent handoffs and ticket lifecycles.
 
 ### Primary Objectives:
 *   **Instant Resolution**: Deflect up to 70% of support tickets using intelligent documentation search.
@@ -22,33 +22,20 @@ The system operates on a modular **"Brain & Body"** paradigm, utilizing a fleet 
 ### 1. Multi-Agent Workflow
 Below is the logic flow of how a user request is handled from start to finish:
 
-```mermaid
-graph TD
-    A[User Message] --> B{Orchestrator}
-    B --> C[Intent Agent]
-    C -- "General Query" --> D[Knowledge Agent]
-    C -- "Technical Issue" --> E[Issue Understanding Agent]
-    D -- "Solution Found" --> F[Direct AI Response]
-    D -- "Solution Missing" --> G[Clarification Engine]
-    E --> G
-    G -- "Missing Details" --> H[Ask User Follow-up]
-    G -- "Info Complete" --> I[Handoff Agent]
-    I --> J[Ticket Created in DB/Zoho]
-    J --> K[Human Agent Assigned]
-```
+![System Architecture Workflow](architecture.png)
 
 ### 2. The AI Agent Roles (The Brains)
 To ensure high accuracy, the system delegates tasks to specialized AI "Personas":
 
-*   **🕵️ Intent Agent**: The "Receptionist." Decides if the user is asking a technical question, checking a ticket status, or just saying "hello."
-*   **📚 Knowledge Agent**: The "Researcher." This agent has read all your technical manuals and past tickets via RAG and fetches the most relevant fix.
-*   **🧐 Clarification Engine**: The "Doctor." If a user says "My SAP is broken," this agent asks, "Which module? Are there error codes? Which environment?"
-*   **🧩 Issue Understanding Agent**: The "Linguist." It translates messy user messages into clean data points (Category, Urgency, System Type).
-*   **🤝 Handoff Agent**: The "Summarizer." When a human needs to take over, this agent writes a professional brief so the technician can fix the issue immediately without re-asking questions.
+*   **Intent Agent**: The "Receptionist." Decides if the user is asking a technical question, checking a ticket status, or just saying "hello."
+*   **Knowledge Agent**: The "Researcher." This agent has read all your technical manuals and past tickets via RAG and fetches the most relevant fix.
+*   **Clarification Engine**: The "Doctor." If a user says "My SAP is broken," this agent asks, "Which module? Are there error codes? Which environment?"
+*   **Issue Understanding Agent**: The "Linguist." It translates messy user messages into clean data points (Category, Urgency, System Type).
+*   **Handoff Agent**: The "Summarizer." When a human needs to take over, this agent writes a professional brief so the technician can fix the issue immediately without re-asking questions.
 
 ---
 
-## 🔄 How It Works: The User Journey
+## How It Works: The User Journey
 
 To help stakeholders understand the system, here is how a typical support interaction unfolds:
 
@@ -60,24 +47,24 @@ To help stakeholders understand the system, here is how a typical support intera
 
 ---
 
-## 🛠️ Key Features
+## Key Features
 
-### ✨ Smart Ticketing & Auto-Tagging
+### Smart Ticketing & Auto-Tagging
 *   **Automated Categorization**: Uses LLM-based categorization to predict the `Topic` and `Severity` of a ticket instantly.
 *   **SLA Intelligence**: Real-time SLA tracking with custom countdowns and escalation alerts based on priority.
 *   **Agent Assignment**: Smart routing of tickets to the best-suited human technician based on the issue topic.
 
-### 📚 Self-Evolving Knowledge Base
+### Self-Evolving Knowledge Base
 *   **Ticket-to-KB Promotion**: Once a human technician resolves a unique issue, the system uses AI to summarize the resolution and "promote" it to a permanent KB article.
 *   **Vector Sync**: New KB articles are instantly vectorized and added to the RAG pipeline for future queries, creating a self-learning loop.
 
 ---
 
-## 🧰 Technology Stack
+## Technology Stack
 
 | Component | Technology |
 | :--- | :--- |
-| **Intelligence** | OCI Generative AI (Llama 3 / Command R / Gemini) |
+| **Intelligence** | OCI Generative AI  |
 | **Database** | Oracle Autonomous Data Warehouse (ADW) |
 | **Vector Search** | Oracle AI Vector Search (Database 23ai) |
 | **Embedding Model** | `all-mpnet-base-v2` (Sentence Transformers) |
@@ -85,7 +72,7 @@ To help stakeholders understand the system, here is how a typical support intera
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 *   `orchestrator.py`: The central hub for message routing and agent management.
 *   `agents/`: Contains the logic for all specialized AI agents (Knowledge, Intent, Handoff, etc.).
@@ -95,7 +82,7 @@ To help stakeholders understand the system, here is how a typical support intera
 *   `sla_manager.py`: Monitors and calculates real-time SLA deadlines.
 *   `auto_tagging.py`: AI-driven classification and metadata prediction for support issues.
 
-## ⚙️ Getting Started
+## Getting Started
 
 ### Prerequisites
 *   OCI Tenancy with Generative AI and ADW instance.
@@ -114,7 +101,7 @@ To help stakeholders understand the system, here is how a typical support intera
 
 ---
 
-## ⚙️ Configuration Guide
+##  Configuration Guide
 
 The system relies on a `.env` file for secure configuration. Below is a breakdown of the required variables:
 
@@ -129,11 +116,10 @@ The system relies on a `.env` file for secure configuration. Below is a breakdow
 
 ---
 
-## 📅 Roadmap
+##  Roadmap
 *   [ ] **Microsoft Teams Integration**: Full migration to enterprise Teams environment using Azure Bot Service.
 *   [ ] **Advanced Analytics Dashboard**: Real-time visualization of support trends, AI deflection rates, and SLA health.
 
----
-*Developed as part of the AI-Enabled Intelligent Support Initiative.*
+
 
 
