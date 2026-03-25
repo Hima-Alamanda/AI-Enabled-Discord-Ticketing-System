@@ -1,22 +1,21 @@
+# Core Bot & Environment
+discord.py
+python-dotenv
+
+# Oracle Cloud & Database
+oci
+oracledb
+
+# Data Handling
 pandas
-chromadb
-ollama
-matplotlib
-plotly
 openpyxl
-tiktoken
-fastapi
-uvicorn
+tabulate
+
+# AI & Knowledge Base
+sentence-transformers
+
+# Document & Image Processing
 pdfplumber
 pytesseract
 Pillow
-google-generativeai
-python-dotenv
-sentence-transformers
 python-docx
-oracledb
-oci
-botbuilder-core
-botbuilder-schema
-botbuilder-integration-aiohttp
-discord.py

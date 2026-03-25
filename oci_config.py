@@ -1,23 +1,30 @@
 import oci
 import os
+import os
+from dotenv import load_dotenv
+
+# Load the .env file
+load_dotenv()
 
 #OCI CONFIGURATION 
-COMPARTMENT_ID = "ocid1.compartment.oc1..aaaaaaaayvwmx7qejmczmtqzgos7nonbycbkyonxleqiljo76zywbmw53vlq"
-REGION = "us-ashburn-1"
+COMPARTMENT_ID = os.getenv("COMPARTMENT_ID")
+REGION = os.getenv("OCI_REGION")
 
 # OCI Generative AI Service Endpoints
 GENAI_INFERENCE_ENDPOINT = f"https://inference.generativeai.{REGION}.oci.oraclecloud.com"
 
 
-# We are using Gemini 2.5 Flash 
-CHAT_MODEL_ID = "google.gemini-2.5-flash"
+#using Gemini 2.5 Flash ( google.gemini-2.5-pro ), ( xai.grok-4.20-reasoning )
+#CHAT_MODEL_ID = "xai.grok-4.20-reasoning"
+CHAT_MODEL_ID = "google.gemini-2.5-pro"
 
-# OTHER OCI SETTINGS (From oci_storage.py) 
-OCI_NAMESPACE   = "id1h3njyvxzi"
-OCI_BUCKET_NAME = "ticketing-attachments"
+
+
+# OCI SETTINGS (From oci_storage.py) 
+NAMESPACE = os.getenv("OCI_NAMESPACE")
+BUCKET_NAME = os.getenv("OCI_BUCKET_NAME")
 
 def get_config():
-    """Returns the OCI config from ~/.oci/config."""
     try:
         return oci.config.from_file()
     except Exception as e:
