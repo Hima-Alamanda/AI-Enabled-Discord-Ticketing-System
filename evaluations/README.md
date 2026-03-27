@@ -1,38 +1,50 @@
-# Model Evaluation Framework
+# AI Evaluation & Benchmarking Framework
 
-This folder is dedicated to testing and comparing different LLM models (e.g., Google Gemini vs. xAI Grok) for the AI-Enabled Ticketing System.
+This framework provides a rigorous, data-driven approach to comparing different LLM models (e.g., **Google Gemini 2.5 Pro** vs. **xAI Grok 4.20 Reasoning**) for the AI-Enabled Ticketing System.
 
-## Components
+## Core Components
 
-1.  **`golden_dataset.json`**: A curated list of 20 realistic support scenarios with "Ground Truth" labels for Topic, Priority, and Intent.
-2.  **`eval_runner.py`**: A script to automate the evaluation of multiple models against the golden dataset.
-3.  **`results/`**: A directory where model outputs and accuracy scores are saved for managerial review.
+1.  **`benchmark_dataset.json`**: A high-quality dataset containing diverse enterprise support scenarios, including ground truth solutions, expected actions, and attachment information.
+2.  **`model_comparison_v2.py`**: The primary evaluation engine. It uses an **LLM-as-a-Judge** (Gemini 2.5 Flash) to score responses based on Correctness, Faithfulness, Actionability, and Format Adherence.
+3.  **`quantitative_eval.py`**: Calculates mathematical alignment scores including **BLEU** (n-gram overlap) and **ROUGE-L** (structural similarity) against ground truth answers.
+4.  **`results/`**: Stores all evaluation artifacts.
+    *   **Timestamped Files**: Full history of every run (e.g., `report_20260327_1311.md`). These stay local only.
+    *   **Latest Files**: The most recent run results (e.g., `report_latest.md`). These are automatically pushed to GitHub.
 
-## How to used
+## How to Run Evaluations
 
-1.  **Define your Models**: Open `eval_runner.py` and ensure the API calls for both Gemini and Grok are correctly configured.
-    *   *Note: Ensure you have the necessary API keys in your environment variables.*
-2.  **Run Evaluation**:
-    ```bash
-    python evaluations/eval_runner.py
-    ```
-3.  **Review Results**: Check `evaluations/results/summary.csv` for a side-by-side comparison of accuracy and performance.
+The system is integrated into the root `Makefile` for ease of use.
 
-## Accuracy Metrics (Updated)
+### 1. Run and Review (Local Only)
+Generates full reports and data locally for your review.
+```bash
+make eval-run
+```
 
-The system now automatically tracks professional OCI metrics:
+### 2. Run and Push to GitHub (Automated)
+Runs the full evaluation suite and automatically pushes the **latest** reports and CSV data to the main repository. This keeps the GitHub history clean (tracking only one "current" report) while preserving your local history.
+```bash
+make eval-push
+```
 
-1.  **Success Rate (%)**: The percentage of calls that returned a valid response without API errors.
-2.  **Avg Latency (s)**: The average time taken by the model to process a query.
-3.  **Faithfulness (%)**: Measured by an LLM-as-a-judge. It verifies that the model's response is grounded in the "Ground Truth" scenario and doesn't hallucinate.
-4.  **Topic Accuracy**: Does the model correctly identify the department (HR, IT, etc.)?
-5.  **Priority Accuracy**: Does the model assign the correct severity?
+## Evaluation Metrics
 
-## How to use
+The framework assesses models across two distinct dimensions:
 
-1.  **Run Evaluation**:
-    ```bash
-    python evaluations/eval_runner.py
-    ```
-2.  **Review Results**: Check `evaluations/results/latest_evaluation.csv` for the detailed breakdown.
-3.  **Analyze Performance**: Use the final Scorecard in your terminal to see if the model meets production standards.
+### A. Qualitative (LLM-as-a-Judge)
+Scores from **0 to 5** assigned by an objective auditor:
+*   **Correctness**: Technical accuracy against the "Golden Answer".
+*   **Faithfulness**: Grounding in KB context (hallucination check).
+*   **Actionability**: Practicality of the resolution steps provided.
+*   **Format Adherence**: Compliance with the required four-header structure.
+*   **Escalation Logic**: Correct decision-making (Solve vs. Create Ticket).
+
+### B. Quantitative (Mathematical)
+*   **BLEU Score**: Measures word-level overlap with ground truth.
+*   **ROUGE-L Score**: Measures sentence-level structural similarity.
+*   **Latency (s)**: Average response time per model.
+*   **Token Usage**: Detailed tracking of Input, Output, and Total tokens via OCI Generative AI.
+
+## Result Management
+*   **Git Policy**: Only files ending in `_latest` in the `results/` directory are tracked in GitHub. 
+*   **Local History**: All timestamped files are automatically ignored by Git to prevent repository bloat, allowing you to maintain a comprehensive local archive of all your experiments.
