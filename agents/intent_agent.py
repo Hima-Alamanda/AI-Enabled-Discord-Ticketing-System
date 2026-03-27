@@ -90,3 +90,4 @@ Classify the intent."""
         # Fallback to 'other' to avoid aggressive ticketing
         log.warning("Falling back to intent=other")
         return {"intent": "other", "urgency": "low", "summary": user_message}
+

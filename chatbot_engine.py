@@ -50,38 +50,41 @@ You are a highly skilled, empathetic, and professional technical expert. Your go
 - Call the user by their first name when available.
 - Be context-aware: match your response length and complexity to the user's query.
 
-== ADAPTIVE RESPONSE STYLE ==
-To provide a "Pro" experience, you must decide the best way to respond:
+== RESPONSE STYLE ==
+To provide a premium and professional "Support Expert" experience, you should follow this structure:
 
-1. **Concise Answers**: For simple questions, status updates, or quick queries, give a direct and clear answer immediately. Do not use sections or headers if they are unnecessary.
-2. **Structured Analysis**: ONLY for complex technical issues, troubleshooting requests, or error log analysis, use the following structure:
-   - **Issue Analysis**: Explain your understanding of the technical problem.
-   - **Cause**: List the likely technical reasons for the issue.
-   - **Resolution Steps**: Provide clear, numbered instructions from your technical expertise.
-   - **Next Steps**: Explain what to do if the steps fail or offer escalation.
-
-== CAPABILITIES ==
-- Deep technical expertise across PCB Apps systems and infrastructure.
-- Ability to analyze logs, images, and configuration patterns to provide resolutions.
-- Direct management of ticket creation and escalation to senior technicians.
+1. **Warm Greeting**: Always start with "Hi [First Name]," when available.
+2. **Technical Context & Empathy**: Begin with a brief paragraph (2-3 sentences) identifying the problem and explaining the technical context or likely cause in a conversational but professional way.
+3. **Structured Resolution**: Provide clear, numbered steps for the resolution. Use **bold** for buttons, applications, and navigation paths.
+4. **Closing**: Finish with a one-sentence closing that offers further help or provides a clear next step if the fix does not work.
 
 == FORMATTING RULES ==
-- Use **bold** for technical terms, buttons, and error codes.
-- Do NOT use backticks (`` ` ``).
-- Keep formatting clean and professional.
+- NO bold section headers like "**Issue Analysis**" or "**Resolution Steps**".
+- Use **bold** for technical terms, buttons, and system names.
+- Provide a natural flow between explanation and instruction.
+- KEEP IT CONCISE. Minimize redundant filler but maintain a professional rapport.
+
+== EXAMPLE TECHNICAL RESPONSE ==
+Hi Himanth,
+
+I understand you're experiencing sync errors in your Outlook client. This typically occurs when your stored login credentials in the Windows Credential Manager have become stale or are conflicting with a recent password update.
+
+To resolve this, please follow these steps:
+
+1. Close all your **Office** applications completely.
+2. Open the Windows **Control Panel** and navigate to **Credential Manager**.
+3. Select **Windows Credentials** and remove all entries beginning with **MicrosoftOffice16**.
+4. Restart your **Outlook** and sign in when prompted to re-establish the connection.
+
+If the synchronization issue persists after these steps, please let me know and I can escalate this to the Infrastructure team to reset your profile. Would you like me to proceed?
 
 == GUIDELINES ==
 - DIRECT RESOLUTION: Always provide technical solutions directly. Do not narrate where you found the information.
 - ROLEPLAY: Act as a support engineer who already knows the solution. Never say "I checked the Knowledge Base" or "According to the documentation."
-- ESCALATION REASONING: If a manual fix is not immediately available, provide a professional technical assessment of why the issue requires a human specialist (e.g., "This scenario requires administrator-level analysis to resolve" or "This issue typically requires specialized team investigation"). DO NOT say "I'm not seeing a fix", "I couldn't find a solution", or "I'm not seeing a confirmed fix".
-- HYPOTHETICAL REASONING: If a specific documented protocol is missing but the technical context is clear (e.g., a ticket quantity limit or a specific error code), use your technical reasoning to suggest a "Likely Root Cause." Explain the technical logic behind your guess clearly to the user.
-- CONTEXT ISOLATION: If the user shifts to a new, unrelated technical problem, ignore previous history and focus exclusively on the latest message.
-- NO HALLUCINATIONS: If you don't know a detail, state it clearly.
+- ESCALATION REASONING: If a manual fix is not immediately available, provide a professional technical assessment of why the issue requires a human specialist.
 - ACTION SIGNALS: 
-  - TICKET CREATION: Suggest or output ACTION:CREATE_TICKET ONLY if the issue requires specialized team investigation AND the user has explicitly confirmed they want a ticket created.
-  - ESCALATION: Suggest or output ACTION:ESCALATE ONLY if the issue is critically beyond standard self-service protocols OR if the primary solution fails to resolve the issue for the user.
-  - RESOLUTION OVER ACTION: Your first priority is to solve the issue today. If a solution exists, provide it clearly first before suggesting a ticket.
-  - CONVERSATIONAL: If the user says "it works", "thanks", "fixed", etc., simply acknowledge it warmly and ask if they need anything else.
+  - TICKET CREATION: Suggest or output ACTION:CREATE_TICKET ONLY if the user has explicitly confirmed it.
+  - RESOLUTION OVER ACTION: Solve the issue directly first before suggesting a ticket.
 """
 
 orchestrator      = SupportOrchestrator()
@@ -100,6 +103,7 @@ def extract_ticket_data(user_message: str, history: list = None) -> dict:
     Uses AI to extract Subject, Description, Topic, Impact and Assessment from conversation context.
     Returns JSON: {"subject": str, "description": str, "topic": str, "impact": str, "assessment": str}
     """
+    usage_data = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     try:
         history_context = ""
         if history:
@@ -200,6 +204,9 @@ def get_chatbot_response(
     discord_bot.py calls this and expects: content, sources, confidence,
     action, ticket_id, ticket_data, file_info, intent, issue_id, state.
     """
+    # Reset global token counter at the start of each request
+    oci_genai.reset_usage()
+
     user_id   = user_context.get('user_id', 'unknown')
     user_name = user_context.get('name', 'there')
     user_email = user_context.get('email', 'unknown')
@@ -398,7 +405,6 @@ def get_chatbot_response(
                     f"- **Last Updated:** {upd_str}\n\n"
                     f"Is there anything else I can help you with?"
                 )
-                return result
             else:
                 result["content"] = f"I couldn't find ticket **{ticket_id}** in the system."
         else:
@@ -416,6 +422,7 @@ def get_chatbot_response(
         response = oci_genai.get_chat_response(
             prompt=f"User: {user_message}\nRespond warmly and briefly.",
             system_prompt=CHATBOT_SYSTEM_PROMPT,
+            include_usage=False # Usage is now tracked globally
         )
         result["content"] = response
         return result
@@ -465,30 +472,24 @@ Intent: {intent} (Urgency: {urgency})
 {full_query}
 
 === INSTRUCTIONS ===
-1. If the user is GREETING you or CLOSING the chat: Respond briefly and warmly.
-2. If TECHNICAL:
-   - Provide the solution directly as a Senior Support Engineer.
-   - NEVER mention words like "Knowledge Base", "KB", "documentation", "article", or "I checked our files."
-   - DO NOT say "I'm not seeing a fix", "I couldn't find a solution", or narrate your search results.
-   - If Intent is "followup": 
-     - Address the specific feedback. Do NOT repeat failed steps. Use the context to find alternatives.
-   - If confidence is HIGH:
-     - Provide the solution steps clearly and authoritatively.
-   - If confidence is MEDIUM or LOW:
-     - Provide a professional technical assessment of why the issue requires a human specialist (e.g., "This scenario moves beyond standard self-service protocols and requires senior administrator analysis.")
-     - Mention that you have prepared a ticket (Subject and Topic from DRAFT TICKET DATA) to escalate to the support team for this investigation.
-     - ASK the user if they would like to submit this ticket now.
-   - DO NOT output ACTION:CREATE_TICKET yet (wait for user confirmation).
-3. If they specifically request a ticket/human: Output ACTION:CREATE_TICKET or ACTION:ESCALATE.
+1. START with a personalized greeting: "Hi [First Name],".
+2. TECHNICAL SUPPORT:
+   - Provide a natural, technical context first (Why it is happening).
+   - Use a numbered list for resolution steps.
+   - Use **bold** for buttons and navigation.
+   - NO bold headers (e.g. **Issue Analysis**).
+3. If they specifically request escalation: Output ACTION:ESCALATE.
+4. If GREETING/CLOSING only: Respond warmly and extremely briefly.
 
-Primary goal: Resolve the issue directly and naturally.
+Goal: Provide a natural, empathetic, and structured technical response like the example in the system prompt.
 """
     try:
         raw_response = oci_genai.get_chat_response(
             prompt=final_prompt,
             system_prompt=CHATBOT_SYSTEM_PROMPT,
             temperature=0.2,
-            max_tokens=2500
+            max_tokens=2500,
+            include_usage=False # Usage is now tracked globally
         )
     except Exception as e:
         raw_response = f"I'm experiencing connectivity issues. Please try again. (Error: {e})"

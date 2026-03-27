@@ -1,9 +1,16 @@
 import oci
 import oci_config
 import json
+import logging
+import re
 
-# Initialize clients
+log = logging.getLogger("OCI_GenAI")
+
+# Initialize client
 _inference_client = None
+
+# Global token usage tracker
+_usage_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
 def get_inference_client():
     global _inference_client
@@ -16,91 +23,99 @@ def get_inference_client():
         )
     return _inference_client
 
-def get_chat_response(prompt, system_prompt=None, temperature=0.2, max_tokens=2000):
+def reset_usage():
+    """Resets the global token usage counters."""
+    global _usage_stats
+    _usage_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+    log.debug("Global usage stats reset.")
+
+def get_total_usage():
+    """Returns the cumulative token usage since last reset."""
+    return _usage_stats.copy()
+
+def get_chat_response(prompt: str, system_prompt: str = None, temperature: float = 0.5, max_tokens: int = 2000, include_usage: bool = False):
     """
-    Generates a chat response using OCI Generative AI (Gemini).
+    Sends a chat request to OCI GenAI.
+    Updates global token tracking automatically.
+    Returns:
+        If include_usage=True: (text, usage_dict)
+        Else: text
     """
+    global _usage_stats
     client = get_inference_client()
     
-    # Construct Messages using the correct OCI SDK classes
-    messages = []
+    # Construct messages for the chat request
+    messages_list = []
     if system_prompt:
-        # SystemMessage class from oci.generative_ai_inference.models
-        system_msg = oci.generative_ai_inference.models.SystemMessage()
-        system_msg.content = [oci.generative_ai_inference.models.TextContent(text=system_prompt)]
-        messages.append(system_msg)
+        messages_list.append(oci.generative_ai_inference.models.Message(
+            role="SYSTEM", 
+            content=[oci.generative_ai_inference.models.TextContent(text=system_prompt)]
+        ))
+    else:
+        messages_list.append(oci.generative_ai_inference.models.Message(
+            role="SYSTEM", 
+            content=[oci.generative_ai_inference.models.TextContent(text="You are a helpful IT support assistant.")]
+        ))
     
-    # UserMessage class from oci.generative_ai_inference.models
-    user_msg = oci.generative_ai_inference.models.UserMessage()
-    user_msg.content = [oci.generative_ai_inference.models.TextContent(text=prompt)]
-    messages.append(user_msg)
+    messages_list.append(oci.generative_ai_inference.models.Message(
+        role="USER", 
+        content=[oci.generative_ai_inference.models.TextContent(text=prompt)]
+    ))
+
+    chat_request = oci.generative_ai_inference.models.GenericChatRequest(
+        messages=messages_list,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        top_p=0.9,
+    )
     
-    chat_details = oci.generative_ai_inference.models.ChatDetails()
-    chat_details.compartment_id = oci_config.COMPARTMENT_ID
-    chat_details.serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(model_id=oci_config.CHAT_MODEL_ID)
+    chat_details = oci.generative_ai_inference.models.ChatDetails(
+        compartment_id=oci_config.COMPARTMENT_ID,
+        serving_mode=oci.generative_ai_inference.models.DedicatedServingMode(
+            endpoint_id=oci_config.CHAT_MODEL_ID
+        ) if ".endpoint" in oci_config.CHAT_MODEL_ID else oci.generative_ai_inference.models.OnDemandServingMode(
+            model_id=oci_config.CHAT_MODEL_ID
+        ),
+        chat_request=chat_request
+    )
     
-    chat_request = oci.generative_ai_inference.models.GenericChatRequest()
-    chat_request.messages = messages
-    chat_request.max_tokens = max_tokens
-    chat_request.temperature = temperature
-    
-    chat_details.chat_request = chat_request
-    
-    print(f"[OCI] Using Compartment: {oci_config.COMPARTMENT_ID[:20]}...")
-    print(f"[OCI] Using Model: {oci_config.CHAT_MODEL_ID}")
-    print(f"[OCI] Endpoint: {oci_config.GENAI_INFERENCE_ENDPOINT}")
-    
-    print("PROMPT DEBUG:-")
-    print(f"Prompt length (characters): {len(prompt)}")
-    print(" ")
+    current_call_usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
     try:
         response = client.chat(chat_details)
-        if not response or not response.data:
-            print("[OCI] Empty response received from GenAI service.")
-            return "Error: No data in OCI response."
+        if not response or not response.data or not response.data.chat_response or not response.data.chat_response.choices:
+            err_msg = "Error: Invalid response from GenAI service."
+            return (err_msg, current_call_usage) if include_usage else err_msg
 
-        # Log Token Usage Metadata
-        usage = getattr(response.data.chat_response, "usage", None)
-        if usage:
-            input_tokens = getattr(usage, "prompt_tokens", "unknown")
-            output_tokens = getattr(usage, "completion_tokens", "unknown")
-            total_tokens = getattr(usage, "total_tokens", "unknown")
-
-            print("OCI GENAI TOKEN USAGE:-")
-            print(f"Input Tokens: {input_tokens}")
-            print(f"Output Tokens: {output_tokens}")
-            print(f"Total Tokens: {total_tokens}")
-            print(" ")
-
-        chat_resp = response.data.chat_response
-        if not chat_resp or not chat_resp.choices:
-            print(f"[OCI] No choices in response. Resp: {chat_resp}")
-            return "Error: AI returned no choices."
-
-        choice = chat_resp.choices[0]
-        if not choice or not hasattr(choice, 'message') or not choice.message:
-             print(f"[OCI] Choice message is None. Finish Reason: {getattr(choice, 'finish_reason', 'Unknown')}")
-             return f"Error: AI response blocked or empty (Reason: {getattr(choice, 'finish_reason', 'N/A')})"
-
-        if not hasattr(choice.message, 'content') or not choice.message.content or len(choice.message.content) == 0:
-             print(f"[OCI] Choice message content is empty/None")
-             return "Error: AI response contained no text content."
-
-        # Extract response text safely
-        text = choice.message.content[0].text
+        # Extract token usage
+        usage_obj = getattr(response.data.chat_response, "usage", None)
+        if usage_obj:
+            current_call_usage["input_tokens"] = getattr(usage_obj, "prompt_tokens", 0)
+            current_call_usage["output_tokens"] = getattr(usage_obj, "completion_tokens", 0)
+            current_call_usage["total_tokens"] = getattr(usage_obj, "total_tokens", 0)
+        else:
+            current_call_usage["input_tokens"] = getattr(response.data.chat_response, 'prompt_token_count', 0)
+            current_call_usage["output_tokens"] = getattr(response.data.chat_response, 'completion_token_count', 0)
+            current_call_usage["total_tokens"] = current_call_usage["input_tokens"] + current_call_usage["output_tokens"]
         
-        return text
-    except Exception as e:
-        print(f"Error getting OCI chat response: {e}")
-        # Print more details about the error if possible
-        if hasattr(e, 'status'):
-            print(f"Status: {e.status}, Message: {e.message}")
-        return f"OCI GenAI Error: {str(e)}"
+        # Update global stats
+        for k in _usage_stats:
+            _usage_stats[k] += current_call_usage.get(k, 0)
 
-if __name__ == "__main__":
-    import oci_config
-    print(f"Testing OCI with model: {oci_config.CHAT_MODEL_ID}")
-    print("Testing OCI with system prompt...")
-    resp = get_chat_response("Hi there!", system_prompt="You are a helpful assistant.")
-    print(f"Response: {resp}")
+        # Logging
+        if current_call_usage["total_tokens"] > 0:
+            print(f"\nOCI GENAI TOKEN USAGE:-")
+            print(f"Input Tokens: {current_call_usage['input_tokens']}")
+            print(f"Output Tokens: {current_call_usage['output_tokens']}")
+            print(f"Total Tokens: {current_call_usage['total_tokens']}\n")
+
+        result_text = response.data.chat_response.choices[0].message.content[0].text
+        if include_usage:
+            return result_text, current_call_usage
+        return result_text
+
+    except Exception as e:
+        log.error(f"Error in GenAI call: {e}")
+        if include_usage:
+            return f"Error: {e}", current_call_usage
+        return f"Error: {e}"

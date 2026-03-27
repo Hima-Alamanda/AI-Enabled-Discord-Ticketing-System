@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 # Load the .env file
 load_dotenv()
 # Access the variables
-NAMESPACE = os.getenv("OCI_NAMESPACE")
-BUCKET_NAME = os.getenv("OCI_BUCKET_NAME")
-REGION = os.getenv("OCI_REGION")
+OCI_NAMESPACE = os.getenv("OCI_NAMESPACE")
+OCI_BUCKET_NAME = os.getenv("OCI_BUCKET_NAME")
+OCI_REGION = os.getenv("OCI_REGION")
 PAR_EXPIRY_HOURS = 24   # Pre-Authenticated Request link valid for 24 hours
 
 # In-memory cache for PAR URLs (object_name -> {url, expiry_time})

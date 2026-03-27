@@ -18,8 +18,5 @@ instantclient/
 # OS
 .DS_Store
 
-
-
-
-evaluations/results
+# Evaluations
 evaluations

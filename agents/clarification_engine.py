@@ -75,56 +75,51 @@ class ClarificationEngine:
             log.info("No KB candidates found for this query → ESCALATE (avoiding interrogation loop)")
             return "ESCALATE"
 
-        # We NEVER want to guess the system UNLESS the KB match is exceptionally strong.
+        # We NEVER want to guess the system UNLESS the KB match is strong or unique.
         if "system_or_application" in missing_slots:
-            if kb_confidence == "high":
-                log.info("Missing system slot but KB confidence is HIGH and unique → proceed towards ANSWER")
-                # Do not return CLARIFY here, let it fall through to Rule 7
+            if kb_confidence in ("high", "medium"):
+                log.info("Missing system slot but KB confidence is %s → proceed towards ANSWER", kb_confidence)
                 pass
             else:
-                log.info("Missing critical 'system_or_application' slot → CLARIFY")
+                log.info("Missing critical 'system_or_application' slot and low KB confidence → CLARIFY")
                 return "CLARIFY"
 
         # Skip if we already have a locked domain or strictly matched system
         is_known_system = bool(issue.get("system") or issue.get("application"))
         
         if is_multi_domain and not is_known_system:
-            # Even if gap is okay, if it's multiple domains we clarify for safety
-            # unless the confidence is exceptionally high and unambiguous.
-            if kb_confidence != "high" or score_gap < 0.15:
+            # Only clarify multi-domain if confidence isn't high enough
+            if kb_confidence != "high" and score_gap < 0.12:
                 # Get competing domains for logging
                 competing = retrieval_result.get("competing_domains", [])
-                log.info("Multi-domain ambiguity detected (competing: %s) → CLARIFY", competing)
+                log.info("Multi-domain ambiguity detected (gap=%.2f) → CLARIFY", score_gap)
                 return "CLARIFY"
 
         if current_stage == S["TROUBLESHOOTING"] and kb_confidence != "low":
             log.info("Stage is TROUBLESHOOTING + KB match → ANSWER")
             return "ANSWER"
 
-        if ambiguity_flags and kb_confidence != "high" and current_stage == S["IDENTIFYING"]:
-            log.info("Ambiguity flags %s + IDENTIFYING → CLARIFY", ambiguity_flags)
+        # RELAXED RULES: Only clarify if KB confidence is truly LOW
+        if ambiguity_flags and kb_confidence == "low" and current_stage == S["IDENTIFYING"]:
+            log.info("Ambiguity flags %s + LOW KB → CLARIFY", ambiguity_flags)
             return "CLARIFY"
 
-        if missing_slots and kb_confidence != "high" and current_stage == S["IDENTIFYING"]:
-            log.info("Missing slots %s + IDENTIFYING → CLARIFY", missing_slots)
+        if missing_slots and kb_confidence == "low" and current_stage == S["IDENTIFYING"]:
+            log.info("Missing slots %s + LOW KB → CLARIFY", missing_slots)
             return "CLARIFY"
 
         if kb_confidence == "low" and issue_confidence < KB_LOW_CONFIDENCE_ESCALATION_THRESHOLD:
             log.info("Low KB + low issue confidence → ESCALATE")
             return "ESCALATE"
 
-        # Requires system/app to be known (verified by Rule 2)
-        if kb_confidence in ("high", "medium") or (issue_confidence > 0.7 and kb_confidence != "low"):
-            log.info("Sufficient understanding (issue_conf=%s) + %s KB confidence → ANSWER", issue_confidence, kb_confidence)
+        # Sane default: if we have any medium/high KB match, or even a low one that isn't totally vague, try an ANSWER
+        if kb_confidence in ("high", "medium") or (issue_confidence > 0.5):
+            log.info("Sufficient understanding for attempt (issue_conf=%.2f, kb=%s) → ANSWER", issue_confidence, kb_confidence)
             return "ANSWER"
 
-        if current_stage == S["TROUBLESHOOTING"] or clarification_rounds >= 2:
-            log.info("Already TROUBLESHOOTING or multiple rounds reached with low KB confidence → ESCALATE")
-            return "ESCALATE"
-
         # Default fallthrough
-        log.info("Default fallthrough (confidence=%s) → CLARIFY", kb_confidence)
-        return "CLARIFY"
+        log.info("Bottom fallthrough → ANSWER (attempting support first)")
+        return "ANSWER"
 
     # Public: needs_clarification (convenience)
 
@@ -166,8 +161,6 @@ class ClarificationEngine:
         Generates a precise, targeted clarification question based on
         what's missing.
         """
-        # Note: In chatbot_engine, we usually call get_clarification_package directly
-        # for efficiency, but we keep these for backward compatibility.
         package = self.get_clarification_package(issue, retrieval_result, history)
         return package.get("question", "Could you provide more details?")
 
@@ -252,6 +245,7 @@ Potential KB Solutions:
 Missing Information: {", ".join(issue.get('missing_slots', []))}
 
 Generate JSON clarification:"""
+        usage_data = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
         try:
             # We use a cached response if we already generated it in this turn

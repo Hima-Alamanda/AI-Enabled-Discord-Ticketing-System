@@ -10,6 +10,8 @@ oracledb
 pandas
 openpyxl
 tabulate
+nltk
+rouge-score
 
 # AI & Knowledge Base
 sentence-transformers

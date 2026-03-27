@@ -207,7 +207,6 @@ class IssueUnderstandingAgent:
     def semantic_extract_issue_fields(self, message: str, history: list = None) -> dict:
         """
         Uses OCI GenAI to semantically extract issue fields.
-        This handles complex issues where simple regex fails (e.g. ticket quotas).
         """
         history_context = ""
         if history:
@@ -249,6 +248,7 @@ RULES:
             log.error("Semantic extraction failed: %s", e)
         
         return {}
+
 
     # Public: merge_issue_context
 
