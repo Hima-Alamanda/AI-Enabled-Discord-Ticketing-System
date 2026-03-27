@@ -18,5 +18,6 @@ instantclient/
 # OS
 .DS_Store
 
-# Evaluations
-evaluations
+# Evaluations 
+evaluations/results/*
+!evaluations/results/*latest*

@@ -1,0 +1,61 @@
+[
+  {
+    "id": "TC-001",
+    "category": "KB-Supported",
+    "query": "I am unable to see my team's vacation calendar in the HR system.",
+    "ground_truth": "The user needs to be granted 'Line Manager' permissions in the HR Portal 'Team visibility' settings. Direct them to the HR Portal -> Profile -> Access Request -> Team Calendar.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests standard grounding with specific internal steps."
+  },
+  {
+    "id": "TC-002",
+    "category": "No-KB",
+    "query": "The coffee machine in the 2nd floor pantry is showing 'Error Code 500' and leaking.",
+    "ground_truth": "This is a Facilities issue, not IT. The bot must NOT try to fix it but should create a ticket for the Facilities team immediately.",
+    "expected_action": "CREATE_TICKET",
+    "notes": "Tests escalation for out-of-scope physical equipment issues."
+  },
+  {
+    "id": "TC-003",
+    "category": "Ambiguous",
+    "query": "I can't log in.",
+    "ground_truth": "The query is too vague. The bot must ask which application (SAP, VPN, Outlook, etc.) the user is trying to access before providing a fix.",
+    "expected_action": "CLARIFY",
+    "notes": "Tests clarification efficiency instead of guessing."
+  },
+  {
+    "id": "MM-001",
+    "category": "Multimodal",
+    "query": "I can't reach any internal tools. See attached.",
+    "attachment_info": "Always On VPN Error screenshot: 'The network connection between your computer and the VPN server could not be established...'",
+    "ground_truth": "Identify the VPN connection failure from the screenshot. Steps: 1) Restart GlobalProtect service, 2) Check for local internet, 3) Re-auth with MFA.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests OCR and visual reasoning for network issues."
+  },
+  {
+    "id": "MM-002",
+    "category": "Multimodal",
+    "query": "Salesforce is down! Everyone is complaining.",
+    "attachment_info": "Salesforce SSO Error screen: 'We can't log you in because of an issue with single sign-on.'",
+    "ground_truth": "The error is 'Single Sign-On Error'. The user should check if their company password expired or if Okta is showing a service disruption.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests identifying app-specific authentication errors."
+  },
+  {
+    "id": "TC-006",
+    "category": "Edge-Case",
+    "query": "I am SO FRUSTRATED. My Outlook is broken. I've cleared the cache and it STILL WON'T WORK. I have a meeting in 2 mins. FIX IT!",
+    "ground_truth": "Since cache clearing failed, tell them to 'Launch in Safe Mode' immediately: Win+R then 'outlook.exe /safe'. This is the fastest workaround for the meeting.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests empathy and high-urgency logic when first-line fixes fail."
+  },
+  {
+    "id": "MM-003",
+    "category": "Multimodal",
+    "query": "SAP looks blank today. Is it offline?",
+    "attachment_info": "SAP Logon 770 window showing 'No entries found.'",
+    "ground_truth": "The 'No entries found' error in SAP Logon 770 usually means the saplogon.ini file is missing or the server list needs XML refreshing. Ask them to restart SAP and click 'Refresh Server List'.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests UI state recognition (empty list vs. crashed app)."
+  }
+]
