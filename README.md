@@ -1,125 +1,87 @@
 # AI-Enabled Intelligent Ticketing & Support System
 
-A state-of-the-art, multi-agent support ecosystem powered by **Oracle Cloud Infrastructure (OCI)** and **Advanced RAG (Retrieval-Augmented Generation)**. This system automates the entire support lifecycle—from initial user query to intelligent resolution and automated Knowledge Base (KB) generation.
+A state-of-the-art, multi-agent support ecosystem powered by **Oracle Cloud Infrastructure (OCI)** and **RAG (Retrieval-Augmented Generation)**. This system automates the entire support lifecycle—from initial user query to intelligent resolution and automated Knowledge Base (KB) generation.
 
 ---
 
-## Project Overview
-
-This project was developed to revolutionize IT support by moving from reactive ticketing to proactive AI assistance. The system provides instant technical solutions while seamlessly managing human agent handoffs and ticket lifecycles.
-
-### Primary Objectives:
-*   **Instant Resolution**: Deflect up to 70% of support tickets using intelligent documentation search.
-*   **Precision Intelligence**: Use specialized agents to understand context, clarify issues, and predict ticket priority.
-*   **Seamless Lifecycle**: Automate ticket creation, SLA monitoring, and "Ticket-to-KB" promotion.
-*   **Enterprise Security**: Built on Oracle's robust cloud infrastructure for data privacy and high-performance vector operations.
-
----
-## System Architecture
+## System Architecture & AI Intelligence
 
 The system operates on a modular **"Brain & Body"** paradigm, utilizing a fleet of specialized AI agents built with OCI Generative AI.
 
-### 1. Multi-Agent Workflow
-Below is the logic flow of how a user request is handled from start to finish:
+### Specialized AI Agent Roles (The Brains)
+Each interaction is handled by a team of agents working in sequence:
+*   **Intent Agent**: The "Receptionist." Classifies user messages (Greeting, Question, Status Check).
+*   **Knowledge Agent**: The "Researcher." Uses **RAG** (Retrieval-Augmented Generation) to find fixes in the technical documentation.
+*   **Clarification Engine**: The "Diagnostician." If a query is vague, it asks targeted follow-up questions until it has enough data.
+*   **Issue Understanding Agent**: The "Analyst." Extracts structured metadata (Category, Urgency, System Type) from human conversations.
+*   **Automation Agent**: The "Operator." Handles automated workflows like ticket creation and database updates.
+*   **Continuity Agent**: The "Memory." Ensures the AI remembers previous context from the chat history.
+*   **Handoff Agent**: The "Summarizer." When human intervention is needed, it drafts a professional technical brief for the technician.
 
-![System Architecture Workflow](architecture.png)
-
-### 2. The AI Agent Roles (The Brains)
-To ensure high accuracy, the system delegates tasks to specialized AI "Personas":
-
-*   **Intent Agent**: The "Receptionist." Decides if the user is asking a technical question, checking a ticket status, or just saying "hello."
-*   **Knowledge Agent**: The "Researcher." This agent has read all your technical manuals and past tickets via RAG and fetches the most relevant fix.
-*   **Clarification Engine**: The "Doctor." If a user says "My SAP is broken," this agent asks, "Which module? Are there error codes? Which environment?"
-*   **Issue Understanding Agent**: The "Linguist." It translates messy user messages into clean data points (Category, Urgency, System Type).
-*   **Handoff Agent**: The "Summarizer." When a human needs to take over, this agent writes a professional brief so the technician can fix the issue immediately without re-asking questions.
-
----
-
-## How It Works: The User Journey
-
-To help stakeholders understand the system, here is how a typical support interaction unfolds:
-
-1.  **Initialization**: A user reports a problem on Discord (e.g., "I can't access Sage Intacct").
-2.  **Semantic Search**: The **Knowledge Agent** instantly searches the Oracle Vector Database. It finds a matching troubleshooting guide.
-3.  **Active Clarification**: If the guide has three possible solutions, the **Clarification Engine** asks the user which specific error they see to narrow it down.
-4.  **Auto-Resolution**: If the user follows the AI's advice and it works, the conversation ends—**saving the company time and money.**
-5.  **Smart Escalation**: If the fix doesn't work, the **Handoff Agent** creates a ticket, predicts its priority (P1-P4), and assigns it to the right team based on the detected topic.
+### Technology Stack
+*   **Intelligence**: OCI Generative AI (Gemini 2.5 Pro / Grok 4.20 Reasoning / Gemini 2.5 Flash)
+*   **Database**: Oracle Autonomous Data Warehouse (ADW)
+*   **Vector Engine**: Oracle AI Vector Search (Database 23ai)
+*   **Delivery**: Discord-enabled intelligent bot workspace.
 
 ---
 
-## Key Features
+## Manager's Quick-Start Dashboard
 
-### Smart Ticketing & Auto-Tagging
-*   **Automated Categorization**: Uses LLM-based categorization to predict the `Topic` and `Severity` of a ticket instantly.
-*   **SLA Intelligence**: Real-time SLA tracking with custom countdowns and escalation alerts based on priority.
-*   **Agent Assignment**: Smart routing of tickets to the best-suited human technician based on the issue topic.
+To make management and testing simple, the system includes a **professional Makefile interface** that handles all complex operations with single commands.
 
-### Self-Evolving Knowledge Base
-*   **Ticket-to-KB Promotion**: Once a human technician resolves a unique issue, the system uses AI to summarize the resolution and "promote" it to a permanent KB article.
-*   **Vector Sync**: New KB articles are instantly vectorized and added to the RAG pipeline for future queries, creating a self-learning loop.
-
----
-
-## Technology Stack
-
-| Component | Technology |
+| Command | Action |
 | :--- | :--- |
-| **Intelligence** | OCI Generative AI  |
-| **Database** | Oracle Autonomous Data Warehouse (ADW) |
-| **Vector Search** | Oracle AI Vector Search (Database 23ai) |
-| **Embedding Model** | `all-mpnet-base-v2` (Sentence Transformers) |
-| **Framework** | Python 3.10+, Discord.py |
+| `make help` | Show this implementation dashboard |
+| `make setup` | Install all Python dependencies & AI model assets |
+| `make db-init` | Initialize Oracle DB pool and register support agents |
+| `make rag-sync` | Synchronize Knowledge Base articles into the Vector Store |
+| **`make eval-push`** | **Run Benchmark Evaluations and push Latest Reports to GitHub** |
+| `make bot-run` | Launch the live Discord AI-Assistant |
+| `make bot-status`| Check if the AI bot is currently running |
 
 ---
 
-## Project Structure
+## Prerequisites & Environment Setup
 
-*   `orchestrator.py`: The central hub for message routing and agent management.
-*   `agents/`: Contains the logic for all specialized AI agents (Knowledge, Intent, Handoff, etc.).
-*   `rag_manager.py`: Handles vectorization, document ingestion, and vector store management.
-*   `database.py`: Robust interface for Oracle ADW, ticket persistence, and KB management.
-*   `controller.py`: Core business logic for ticket creation, status updates, and KB promotion.
-*   `sla_manager.py`: Monitors and calculates real-time SLA deadlines.
-*   `auto_tagging.py`: AI-driven classification and metadata prediction for support issues.
+Since this is an enterprise-grade system, it requires specific local environment configurations for OCI and Oracle connectivity.
 
-## Getting Started
+### 1. Oracle Cloud Connectivity
+*   **OCI SDK**: Installed automatically via `make setup`.
+*   **`.oci/` Config**: Ensure you have an OCI configuration file located at `~/.oci/config` with your user credentials, fingerprint, and private key.
+*   **Compartment ID**: You need the OCID of the compartment where the Generative AI service is enabled.
 
-### Prerequisites
-*   OCI Tenancy with Generative AI and ADW instance.
-*   Oracle Instant Client & Wallet for DB connection.
-*   Python 3.10+ environment.
-
-### Installation
-1.  Clone the repository:
+### 2. Autonomous Database (ADW) Connectivity
+The system uses **Oracle Instant Client** for high-performance ADW connections.
+1.  **Instant Client**: Download and unzip the [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) for your OS.
+2.  **Wallet Folder**: Place your **DB Wallet** (e.g., `Wallet_EDI/`) in the root directory.
+3.  **Environment Variables**: Add the following to your `.env` file:
     ```bash
-    git clone https://github.com/RajasekharAHN/AI-Enabled-Discord-Ticketing-System.git
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
+    DB_USER=ADMIN
+    DB_PASSWORD=YourPassword...
+    DB_DSN=your_db_high
+    COMPARTMENT_ID=ocid1.compartment...
+    DISCORD_TOKEN=your_bot_token...
     ```
 
 ---
 
-##  Configuration Guide
+## Performance Benchmarking & Evaluations
 
-The system relies on a `.env` file for secure configuration. Below is a breakdown of the required variables:
+We have implemented a rigorous **Automated Evaluation Framework** (located in `/evaluations`) that keeps the project data-driven.
 
-| Variable | Description |
-| :--- | :--- |
-| `OCI_CONFIG_FILE` | Path to your OCI config (usually `~/.oci/config`). |
-| `DB_USER` | The admin username for your Oracle ADW instance. |
-| `DB_PASSWORD` | The password for your Oracle ADW instance. |
-| `DB_DSN` | The connection string (TNS Name) from your Wallet. |
-| `DISCORD_TOKEN` | Your unique Discord Bot Token. |
-| `COMPARTMENT_ID` | The OCI Compartment OCID where GenAI is enabled. |
+*   **Models Compared**: Google Gemini 2.5 Pro vs. xAI Grok 4.20 Reasoning.
+*   **Metrics**: Correctness, Faithfulness, Actionability, BLEU Score, ROUGE-L, and Latency.
+*   **Clean History Policy**: The system is configured to only track the **LATEST** performance reports in GitHub (via `report_latest.md`), keeping the codebase clean while maintaining a full historical archive locally in the `results/` folder.
 
 ---
 
-##  Roadmap
-*   [ ] **Microsoft Teams Integration**: Full migration to enterprise Teams environment using Azure Bot Service.
-*   [ ] **Advanced Analytics Dashboard**: Real-time visualization of support trends, AI deflection rates, and SLA health.
+## Workflow
 
+1.  **Clone** the repository.
+2.  **Setup Environment**: Place your `oci_config`, `Wallet_EDI`, and `.env` in the root.
+3.  **Bootstrap**: Run `make setup` and `make db-init`.
+4.  **Analyze**: Run `make eval-push` to see how our latest AI models are performing against the benchmark dataset.
+5.  **Test**: Start the bot with `make bot-run`.
 
-
-
+---
