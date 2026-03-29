@@ -1,12 +1,12 @@
 # AI-Enabled Intelligent Ticketing System
 # VERSION: 1.0.0
-# AUTHOR: Himanth
+
 
 PYTHONEXE = python3
 PIP       = pip3
 LOAD_ENV  = from dotenv import load_dotenv; load_dotenv();
 
-.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run clean
+.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run eval-push clean
 
 help: ## Show implementation dashboard
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
