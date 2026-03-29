@@ -15,8 +15,8 @@ GENAI_INFERENCE_ENDPOINT = f"https://inference.generativeai.{REGION}.oci.oraclec
 
 
 #using Gemini 2.5 Flash ( google.gemini-2.5-pro ), ( xai.grok-4.20-reasoning )
-CHAT_MODEL_ID = "xai.grok-4.20-reasoning"
-#CHAT_MODEL_ID = "google.gemini-2.5-pro"
+#CHAT_MODEL_ID = "xai.grok-4.20-reasoning"
+CHAT_MODEL_ID = "google.gemini-2.5-pro"
 
 
 
