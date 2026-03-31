@@ -1,8 +1,9 @@
 import pandas as pd
 import json
 import os
-import glob
 import sys
+import glob
+import argparse
 from datetime import datetime
 
 # Try to import evaluation libraries, handle missing ones
@@ -25,7 +26,8 @@ for resource in ['punkt', 'punkt_tab']:
 # Setup Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(CURRENT_DIR, "results")
-DATASET_FILE = os.path.join(CURRENT_DIR, "benchmark_dataset.json")
+DATASET_GENERIC = os.path.join(CURRENT_DIR, "benchmark_dataset.json")
+DATASET_ZOHO    = os.path.join(CURRENT_DIR, "zoho_benchmark_dataset.json")
 
 def calculate_bleu(reference, candidate):
     """Calculates BLEU-4 score with smoothing."""
@@ -43,9 +45,13 @@ def calculate_rouge(reference, candidate):
     scores = scorer.score(reference, candidate)
     return round(scores['rougeL'].fmeasure, 4)
 
-def run_quantitative_analysis():
+def run_quantitative_analysis(dataset_mode="generic"):
+    dataset_file = DATASET_ZOHO if dataset_mode == "zoho" else DATASET_GENERIC
+    report_label = "Zoho Tickets" if dataset_mode == "zoho" else "Generic Benchmark"
+    
     print("\n" + "="*60)
-    print(" QUANTITATIVE AI EVALUATION (BLEU & ROUGE) ")
+    print(f" QUANTITATIVE AI EVALUATION (BLEU & ROUGE) ")
+    print(f" Dataset: {report_label}")
     print("="*60)
 
     # 1. Find the latest comparison CSV
@@ -58,12 +64,12 @@ def run_quantitative_analysis():
     print(f"Loading latest results: {os.path.basename(latest_csv)}")
     df = pd.read_csv(latest_csv)
 
-    # 2. Load Ground Truth from Dataset
-    if not os.path.exists(DATASET_FILE):
-        print(f"Error: Dataset {DATASET_FILE} not found.")
+    # 2. Load Ground Truth from correct dataset
+    if not os.path.exists(dataset_file):
+        print(f"Error: Dataset {dataset_file} not found.")
         return
         
-    with open(DATASET_FILE, 'r') as f:
+    with open(dataset_file, 'r') as f:
         dataset = json.load(f)
     
     # Create mapping: case_id -> ground_truth
@@ -104,42 +110,49 @@ def run_quantitative_analysis():
     print(summary)
 
     # 5. Save Quantitative Report
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(RESULTS_DIR, f"math_report_{timestamp}.md")
-    csv_out_path = os.path.join(RESULTS_DIR, f"quantitative_results_{timestamp}.csv")
-
+    csv_out_path = os.path.join(RESULTS_DIR, "quantitative_latest.csv")
     df.to_csv(csv_out_path, index=False)
-    df.to_csv(os.path.join(RESULTS_DIR, "quantitative_latest.csv"), index=False)
+
+    report_path = os.path.join(RESULTS_DIR, "math_report_latest.md")
 
     with open(report_path, "w") as f:
-        f.write(f"# Quantitative Model Performance Report\n\n")
+        f.write(f"# Quantitative Model Performance Report ({report_label})\n\n")
         f.write(f"**Generated on:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"**Dataset:** {report_label}\n")
         f.write(f"**Source Data:** {os.path.basename(latest_csv)}\n\n")
         
-        f.write("## 1. Metric Definitions\n")
-        f.write("- **BLEU (Bilingual Evaluation Understudy):** Measures n-gram overlap. (0-1 range, higher is closer to ground truth phrases).\n")
-        f.write("- **ROUGE-L (Longest Common Subsequence):** Measures structural similarity and recall. (0-1 range, higher is more comprehensive).\n\n")
+        f.write("## 1. Mathematical Metric Definitions\n")
+        f.write("*   **BLEU Score (Precision):** Measures how many phrases the bot used that match the reference exactly.\n")
+        f.write("*   **ROUGE-L Score (Recall):** Measures how much of the structure of the summary was captured by the bot.\n\n")
+        f.write("> **Note:** For support bots, scores between **10% and 30% are excellent**. Bots provide detailed, conversational answers, while the ground truth is usually a very short summary. A low percentage here just means the bot isn't a carbon-copy of the database, but can still be highly accurate.\n\n")
 
-        f.write("## 2. Model Comparison (Averages)\n\n")
-        f.write(summary.to_markdown() + "\n\n")
+        f.write("## 2. Model Comparison (Avg %)\n\n")
+        # Format the summary table for markdown
+        display_summary = summary.copy()
+        display_summary['bleu_score'] = (display_summary['bleu_score'] * 100).map('{:,.2f}%'.format)
+        display_summary['rouge_l_score'] = (display_summary['rouge_l_score'] * 100).map('{:,.2f}%'.format)
+        f.write(display_summary.to_markdown() + "\n\n")
 
-        f.write("## 3. Case-by-Case Mathematical Alignment\n\n")
+        f.write("## 3. Case-by-Case (%) \n\n")
         for model in df['model'].unique():
             f.write(f"### Model: {model}\n")
-            temp_df = df[df['model'] == model]
-            
-            # Simple markdown table for cases
-            subset = temp_df[['case_id', 'bleu_score', 'rouge_l_score']]
+            temp_df = df[df['model'] == model].copy()
+            temp_df['bleu_pct'] = (temp_df['bleu_score'] * 100).map('{:,.2f}%'.format)
+            temp_df['rouge_l_pct'] = (temp_df['rouge_l_score'] * 100).map('{:,.2f}%'.format)
+            subset = temp_df[['case_id', 'bleu_pct', 'rouge_l_pct']]
             f.write(subset.to_markdown(index=False) + "\n\n")
 
-    print(f"\n[SUCCESS]: Quantitative report saved to: {report_path}")
-    
-    # Save a latest copy for git tracking
-    latest_md_path = os.path.join(RESULTS_DIR, "math_report_latest.md")
-    with open(latest_md_path, "w") as lf:
-        with open(report_path, "r") as rf:
-            lf.write(rf.read())
-    print(f"[SUCCESS]: Detailed data saved to: {csv_out_path}")
+    print(f"Results saved to: evaluations/results/")
+    print(f"  - math_report_latest.md")
+    print(f"  - quantitative_latest.csv")
 
 if __name__ == "__main__":
-    run_quantitative_analysis()
+    parser = argparse.ArgumentParser(description="Run BLEU & ROUGE quantitative analysis")
+    parser.add_argument(
+        "--dataset",
+        choices=["generic", "zoho"],
+        default="generic",
+        help="Dataset to use for ground truth: 'generic' or 'zoho'"
+    )
+    args = parser.parse_args()
+    run_quantitative_analysis(dataset_mode=args.dataset)

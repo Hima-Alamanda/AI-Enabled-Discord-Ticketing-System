@@ -1,0 +1,150 @@
+{
+  "summary": {
+    "avg_keyword_overlap_pct": 58.7,
+    "avg_rouge_l": 0.1685,
+    "avg_vector_distance": 0.2731,
+    "avg_response_time_s": 0.27
+  },
+  "test_cases": [
+    {
+      "id": "ZT-001",
+      "query": "I am getting an error message during end of month reporting when posting JE batches. Batch shows status Error.",
+      "expected_ticket": "Error message end of month reporting",
+      "top_hit_title": "Batch job R09801 failed in JDE",
+      "top_hit_source": "faqs.csv_row_21",
+      "vector_distance": 0.3795,
+      "keyword_overlap_pct": 20.0,
+      "rouge_l": 0.1081,
+      "response_time_s": 1.14,
+      "all_hits": [
+        {
+          "title": "Batch job R09801 failed in JDE",
+          "source": "faqs.csv_row_21",
+          "distance": 0.3795
+        },
+        {
+          "title": "Error message end of month reporting (857001)",
+          "source": "zoho_ticket",
+          "distance": 0.3879
+        },
+        {
+          "title": "JDE Report R42565 taking too long",
+          "source": "faqs.csv_row_49",
+          "distance": 0.4622
+        }
+      ]
+    },
+    {
+      "id": "ZT-002",
+      "query": "I cannot access Zoho tickets for DC33 or JFK with my login. Getting access denied.",
+      "expected_ticket": "zoho tickets access issue",
+      "top_hit_title": "zoho tickets (529001)",
+      "top_hit_source": "zoho_archive",
+      "vector_distance": 0.1095,
+      "keyword_overlap_pct": 66.7,
+      "rouge_l": 0.24,
+      "response_time_s": 0.04,
+      "all_hits": [
+        {
+          "title": "zoho tickets (529001)",
+          "source": "zoho_archive",
+          "distance": 0.1095
+        },
+        {
+          "title": "Need to change ticket status in zoho (935002)",
+          "source": "zoho_archive",
+          "distance": 0.3789
+        },
+        {
+          "title": "Zoho Recruit Access (809027)",
+          "source": "zoho_ticket",
+          "distance": 0.4176
+        }
+      ]
+    },
+    {
+      "id": "ZT-003",
+      "query": "There is an eligibility file issue. Retirees covered under HMO are still active on the eligibility file.",
+      "expected_ticket": "Retirees covered under HMO - active on eligibility file",
+      "top_hit_title": "FW: Retirees covered under HMO - active on eligibility file  (154071)",
+      "top_hit_source": "zoho_archive",
+      "vector_distance": 0.3049,
+      "keyword_overlap_pct": 70.0,
+      "rouge_l": 0.2154,
+      "response_time_s": 0.06,
+      "all_hits": [
+        {
+          "title": "FW: Retirees covered under HMO - active on eligibility file  (154071)",
+          "source": "zoho_archive",
+          "distance": 0.3049
+        },
+        {
+          "title": "Re: Terminate from HMO plan (215002)",
+          "source": "zoho_archive",
+          "distance": 0.3959
+        },
+        {
+          "title": "Retirees PPO plans vs New plans  (819001)",
+          "source": "zoho_archive",
+          "distance": 0.4024
+        }
+      ]
+    },
+    {
+      "id": "ZT-004",
+      "query": "Address book issue - unable to add blank values for a field in the system.",
+      "expected_ticket": "Address book- Unable to add blank values",
+      "top_hit_title": "Address book- UDC message (816001)",
+      "top_hit_source": "zoho_ticket",
+      "vector_distance": 0.289,
+      "keyword_overlap_pct": 70.0,
+      "rouge_l": 0.0899,
+      "response_time_s": 0.06,
+      "all_hits": [
+        {
+          "title": "Address book- UDC message (816001)",
+          "source": "zoho_ticket",
+          "distance": 0.289
+        },
+        {
+          "title": "FW: File Missing Addresses (739132)",
+          "source": "zoho_archive",
+          "distance": 0.513
+        },
+        {
+          "title": "City Member Record missing : Deb (888255)",
+          "source": "zoho_archive",
+          "distance": 0.5793
+        }
+      ]
+    },
+    {
+      "id": "ZT-005",
+      "query": "We need to do a Daiwa fiscal year end close. Can you help with the process?",
+      "expected_ticket": "Daiwa Fiscal Year-End Close",
+      "top_hit_title": "Daiwa Fiscal Year-End Close (018001)",
+      "top_hit_source": "zoho_ticket",
+      "vector_distance": 0.2825,
+      "keyword_overlap_pct": 66.7,
+      "rouge_l": 0.1892,
+      "response_time_s": 0.07,
+      "all_hits": [
+        {
+          "title": "Daiwa Fiscal Year-End Close (018001)",
+          "source": "zoho_ticket",
+          "distance": 0.2825
+        },
+        {
+          "title": "Employee termination procedure",
+          "source": "faqs.csv_row_52",
+          "distance": 0.5309
+        },
+        {
+          "title": "FW: Missing Administrative Fee Letter  (442001)",
+          "source": "zoho_archive",
+          "distance": 0.5716
+        }
+      ]
+    }
+  ]
+}

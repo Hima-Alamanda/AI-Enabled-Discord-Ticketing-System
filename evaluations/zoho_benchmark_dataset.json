@@ -1,0 +1,58 @@
+[
+  {
+    "id": "ZT-001",
+    "category": "Zoho-Ticket",
+    "query": "I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.",
+    "ground_truth": "The batch had unposted entries causing the error. Support resolved it by deleting the unposted entries and reposting the batch. The batch status changed to posted successfully.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests resolution of JE batch posting errors — from active Zoho ticket #3052."
+  },
+  {
+    "id": "ZT-002",
+    "category": "Zoho-Archive",
+    "query": "I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.",
+    "ground_truth": "The user's Zoho account did not have permissions to access DC33 or JFK tickets. Support investigated the access permissions and resolved the login access issue.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests access permission issues — from archived Zoho ticket 2021."
+  },
+  {
+    "id": "ZT-003",
+    "category": "Zoho-Archive",
+    "query": "Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?",
+    "ground_truth": "Retirees covered under HMO were incorrectly marked as active on the eligibility file. Support corrected the eligibility file records to reflect the correct retired status.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests eligibility file corrections — from archived Zoho ticket 2021."
+  },
+  {
+    "id": "ZT-004",
+    "category": "Zoho-Ticket",
+    "query": "The address book is not letting me add a blank value to a field. Can you help?",
+    "ground_truth": "The address book field was not accepting blank as a valid value. Support confirmed this should be allowed and applied the fix so blank values are accepted in the field.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests address book UDC field validation fix — from active Zoho ticket."
+  },
+  {
+    "id": "ZT-005",
+    "category": "Zoho-Ticket",
+    "query": "We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?",
+    "ground_truth": "The Daiwa fiscal year-end close is a multi-step process. Support walked through the required steps and timing with the team to complete the close successfully.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests procedural knowledge of fiscal year-end close — from active Zoho ticket."
+  },
+  {
+    "id": "ZT-006",
+    "category": "Zoho-Archive",
+    "query": "I need to remove a member from the eligibility file. How do we process this request?",
+    "ground_truth": "To remove a member from the eligibility file, submit a termination request with the member details and effective date. Support processes the removal and confirms the file update.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests eligibility file removal process — from archived Zoho ticket 2021."
+  },
+  {
+    "id": "ZT-007",
+    "category": "Edge-Case",
+    "query": "Something is broken in the system.",
+    "ground_truth": "Query is too vague. The bot must ask clarifying questions: which system, what error message, and when did it start before attempting to provide a solution.",
+    "expected_action": "CLARIFY",
+    "notes": "Tests that bot asks for more details instead of guessing."
+  }
+]

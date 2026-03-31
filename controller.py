@@ -14,7 +14,7 @@ def create_ticket(description, user_id, email, subject="Technical Support Reques
     Centralized ticket creation logic.
     Supports auto-tagging, agent assignment, and escalation evaluation.
     """
-    # 1. Auto-tagging / Field Prediction if not provided
+    # 1. Auto-tagging / Field Prediction if not provided 
     if not topic:
         topic = predict_topic(description)
         

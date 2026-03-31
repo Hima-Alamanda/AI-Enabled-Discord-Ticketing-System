@@ -1,5 +1,6 @@
 import json
 import time
+import argparse
 import pandas as pd
 import os
 import sys
@@ -20,8 +21,9 @@ MODELS = [
     {"name": "Grok 4.20 Reasoning", "id": "xai.grok-4.20-reasoning"}
 ]
 
-# 2. EVALUATION DATASET
-DATASET_FILE = os.path.join(CURRENT_DIR, "benchmark_dataset.json")
+# 2. EVALUATION DATASET — selected via --dataset flag
+DATASET_GENERIC = os.path.join(CURRENT_DIR, "benchmark_dataset.json")
+DATASET_ZOHO    = os.path.join(CURRENT_DIR, "zoho_benchmark_dataset.json")
 
 # 3. JUDGE PROMPT
 JUDGE_SYSTEM_PROMPT = """You are an expert Technical QA Engineer specializing in AI Support systems.
@@ -84,16 +86,20 @@ AI RESPONSE: {response}.
     finally:
         oci_config.CHAT_MODEL_ID = original_id
 
-def run_evaluation():
+def run_evaluation(dataset_mode="generic"):
+    dataset_file = DATASET_ZOHO if dataset_mode == "zoho" else DATASET_GENERIC
+    report_label = "Zoho Ticket" if dataset_mode == "zoho" else "Generic Benchmark"
+    
     print("\n" + "="*60)
-    print(" COMPLETE ENTERPRISE AI EVALUATION FRAMEWORK ")
+    print(f" AI EVALUATION: {report_label.upper()} DATASET ")
+    print(f" Models: Gemini 2.5 Pro vs Grok 4.20 Reasoning")
     print("="*60)
 
-    if not os.path.exists(DATASET_FILE):
-        print(f"Error: Dataset not found at {DATASET_FILE}")
+    if not os.path.exists(dataset_file):
+        print(f"Error: Dataset not found at {dataset_file}")
         return
 
-    with open(DATASET_FILE, 'r') as f:
+    with open(dataset_file, 'r') as f:
         dataset = json.load(f)
 
     all_results = []
@@ -169,15 +175,12 @@ def run_evaluation():
         return
         
     df = pd.DataFrame(all_results)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_json = os.path.join(CURRENT_DIR, f"results/comparison_{timestamp}.json")
-    results_csv = os.path.join(CURRENT_DIR, f"results/comparison_{timestamp}.csv")
+    results_csv = os.path.join(CURRENT_DIR, "results/comparison_latest.csv")
     
     if not os.path.exists(os.path.join(CURRENT_DIR, "results")):
         os.makedirs(os.path.join(CURRENT_DIR, "results"))
         
     df.to_csv(results_csv, index=False)
-    df.to_csv(os.path.join(CURRENT_DIR, "results/comparison_latest.csv"), index=False) # Keep latest for clean git tracking
     
     # Final Table per Model
     summary = df.groupby('model').agg({
@@ -203,11 +206,33 @@ def run_evaluation():
     print(f"\nDetailed CSV: {results_csv}")
     
     # Generate MD Report
-    report_path = os.path.join(CURRENT_DIR, f"results/report_{timestamp}.md")
+    report_path = os.path.join(CURRENT_DIR, "results/report_latest.md")
     with open(report_path, "w") as rf:
-        rf.write(f"# Enterprise AI Evaluation Report: Gemini vs. Grok\n\n")
-        rf.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        rf.write("## 1. Quality Scores (Avg 0-5)\n\n")
+        rf.write(f"# AI Evaluation Report: Gemini vs. Grok ({report_label})\n\n")
+        rf.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        rf.write(f"**Dataset:** {report_label} ({len(dataset)} test cases)\n\n")
+
+        rf.write("## 1. Quality Metrics (0-5 Scale)\n")
+        rf.write("Each model's response is scored by an independent AI Auditor based on this scale:\n\n")
+        rf.write("| Score | Rating | Description |\n")
+        rf.write("|:---:|:---|:---|\n")
+        rf.write("| **5** | **Excellent** | Perfect answer, follows all rules, tone is ideal. |\n")
+        rf.write("| **4** | **Good** | Accurate and helpful with minor style or formatting oversights. |\n")
+        rf.write("| **3** | **Acceptable** | Generally correct but misses some details. |\n")
+        rf.write("| **1-2** | **Poor** | Significant errors, confusing steps, or missed the user's intent. |\n")
+        rf.write("| **0** | **Failure** | Completely incorrect, hallucinated facts, or ignored the query. |\n\n")
+
+        rf.write("### The 8 Quality Categories\n")
+        rf.write("1. **Correctness:** Accuracy vs historical Zoho resolution.\n")
+        rf.write("2. **Faithfulness:** Factuality (no hallucinations/invented facts).\n")
+        rf.write("3. **Actionability:** Clarity of step-by-step instructions.\n")
+        rf.write("4. **Format Adherence:** Use of required headers (Analysis, Cause, etc.).\n")
+        rf.write("5. **Ambiguity:** Handling vague queries (correctly asking for info first).\n")
+        rf.write("6. **Multimodal:** Understanding images/screenshots attached to tickets.\n")
+        rf.write("7. **Escalation:** Correct decision to solve vs raise a human ticket.\n")
+        rf.write("8. **Empathy:** Professional, warm, and helpful tone.\n\n")
+
+        rf.write("## 2. Quality Scores Summary\n\n")
         quality_metrics = summary.drop(['latency', 'input_tokens', 'output_tokens', 'total_tokens'], axis=1)
         rf.write(quality_metrics.to_markdown() + "\n\n")
         
@@ -247,13 +272,18 @@ def run_evaluation():
                 rf.write("---\n\n")
             rf.write("\n")
 
-    print(f"Full Report: {report_path}")
 
-    # Also save as latest for git
-    latest_path = os.path.join(CURRENT_DIR, "results/report_latest.md")
-    with open(latest_path, "w") as lf:
-        with open(report_path, "r") as rf:
-            lf.write(rf.read())
+    print(f"Results saved to: evaluations/results/")
+    print(f"  - comparison_latest.csv")
+    print(f"  - report_latest.md")
 
 if __name__ == "__main__":
-    run_evaluation()
+    parser = argparse.ArgumentParser(description="Run AI Model Comparison Evaluation")
+    parser.add_argument(
+        "--dataset",
+        choices=["generic", "zoho"],
+        default="generic",
+        help="Dataset to use: 'generic' (default benchmark) or 'zoho' (real Zoho ticket queries)"
+    )
+    args = parser.parse_args()
+    run_evaluation(dataset_mode=args.dataset)

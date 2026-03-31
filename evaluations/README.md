@@ -1,4 +1,4 @@
-# AI Evaluation Framework — PCB Apps Support Bot
+# AI Evaluation Framework 
 
 This folder contains the complete evaluation pipeline to measure and compare the performance of the AI support bot using **real Zoho Desk ticket data**.
 
