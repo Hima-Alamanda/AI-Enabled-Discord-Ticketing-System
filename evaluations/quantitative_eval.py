@@ -122,9 +122,9 @@ def run_quantitative_analysis(dataset_mode="generic"):
         f.write(f"**Source Data:** {os.path.basename(latest_csv)}\n\n")
         
         f.write("## 1. Mathematical Metric Definitions\n")
-        f.write("*   **BLEU Score (Precision):** Measures how similar the bot’s response is to the expected support answer.\n")
-        f.write("*   **ROUGE-L Score (Recall):** Measures how much of the important expected information is included in the bot’s response.\n\n")
-        #f.write("> **Note:** For support bots, scores between **10% and 30% are excellent**. Bots provide detailed, conversational answers, while the ground truth is usually a very short summary. A low percentage here just means the bot isn't a carbon-copy of the database, but can still be highly accurate.\n\n")
+        f.write("*   **BLEU Score (Precision):** Measures how similar the bot’s response is to the expected support answer. It is usually calculated on a scale from **0 to 1**, where values closer to **1** mean stronger wording similarity. In this report, it is shown as a **percentage** for easier understanding.\n")
+        f.write("*   **ROUGE-L Score (Recall):** Measures how much of the important expected information is included in the bot’s response. It is usually calculated on a scale from **0 to 1**, where values closer to **1** mean better coverage of the expected answer. In this report, it is shown as a **percentage** for easier understanding.\n\n")
+        f.write("> **Note:** The BLEU and ROUGE-L values in this evaluation are relatively low because the bot’s responses are compared against short reference answers. In support systems, the bot may use different wording, extra explanation, or additional troubleshooting steps, which reduces overlap-based scores even when the answer is helpful and accurate.\n\n")
 
         f.write("## 2. Model Comparison (Avg %)\n\n")
         # Format the summary table for markdown
