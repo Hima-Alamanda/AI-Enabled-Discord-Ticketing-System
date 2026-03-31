@@ -1,14 +1,12 @@
 # Quantitative Model Performance Report (Zoho Tickets)
 
-**Generated on:** 2026-03-31 15:50:22
+**Generated on:** 2026-03-31 15:52:59
 **Dataset:** Zoho Tickets
 **Source Data:** comparison_latest.csv
 
 ## 1. Mathematical Metric Definitions
-*   **BLEU Score (Precision):** Measures how many phrases the bot used that match the reference exactly.
-*   **ROUGE-L Score (Recall):** Measures how much of the structure of the summary was captured by the bot.
-
-> **Note:** For support bots, scores between **10% and 30% are excellent**. Bots provide detailed, conversational answers, while the ground truth is usually a very short summary. A low percentage here just means the bot isn't a carbon-copy of the database, but can still be highly accurate.
+*   **BLEU Score (Precision):** Measures how similar the bot’s response is to the expected support answer.
+*   **ROUGE-L Score (Recall):** Measures how much of the important expected information is included in the bot’s response.
 
 ## 2. Model Comparison (Avg %)
 

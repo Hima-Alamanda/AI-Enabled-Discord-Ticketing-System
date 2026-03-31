@@ -122,9 +122,9 @@ def run_quantitative_analysis(dataset_mode="generic"):
         f.write(f"**Source Data:** {os.path.basename(latest_csv)}\n\n")
         
         f.write("## 1. Mathematical Metric Definitions\n")
-        f.write("*   **BLEU Score (Precision):** Measures how many phrases the bot used that match the reference exactly.\n")
-        f.write("*   **ROUGE-L Score (Recall):** Measures how much of the structure of the summary was captured by the bot.\n\n")
-        f.write("> **Note:** For support bots, scores between **10% and 30% are excellent**. Bots provide detailed, conversational answers, while the ground truth is usually a very short summary. A low percentage here just means the bot isn't a carbon-copy of the database, but can still be highly accurate.\n\n")
+        f.write("*   **BLEU Score (Precision):** Measures how similar the bot’s response is to the expected support answer.\n")
+        f.write("*   **ROUGE-L Score (Recall):** Measures how much of the important expected information is included in the bot’s response.\n\n")
+        #f.write("> **Note:** For support bots, scores between **10% and 30% are excellent**. Bots provide detailed, conversational answers, while the ground truth is usually a very short summary. A low percentage here just means the bot isn't a carbon-copy of the database, but can still be highly accurate.\n\n")
 
         f.write("## 2. Model Comparison (Avg %)\n\n")
         # Format the summary table for markdown
