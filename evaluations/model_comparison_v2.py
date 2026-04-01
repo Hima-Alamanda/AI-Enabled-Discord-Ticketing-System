@@ -235,6 +235,10 @@ def run_evaluation(dataset_mode="generic"):
         rf.write("## 2. Quality Scores Summary\n\n")
         quality_metrics = summary.drop(['latency', 'input_tokens', 'output_tokens', 'total_tokens'], axis=1)
         rf.write(quality_metrics.to_markdown() + "\n\n")
+
+        rf.write("### Performance Metrics\n")
+        rf.write("1. **Latency:** The total time (in seconds) the bot took to process and reply.\n")
+        rf.write("2. **Token Usage:** The amount of \"data\" processed by the model (input + output). This directly affects operational cost.\n")
         
         rf.write("## 2. Performance & Cost Metrics (Avg)\n\n")
         perf_metrics = summary[['latency', 'input_tokens', 'output_tokens', 'total_tokens']]
