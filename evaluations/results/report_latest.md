@@ -1,6 +1,6 @@
 # AI Evaluation Report: Gemini vs. Grok (Zoho Ticket)
 
-**Date:** 2026-03-31 16:20:27
+**Date:** 2026-04-01 10:58:23
 **Dataset:** Zoho Ticket (7 test cases)
 
 ## 1. Quality Metrics (0-5 Scale)
@@ -28,311 +28,318 @@ Each model's response is scored by an independent AI Auditor based on this scale
 
 | model               |   correctness |   faithfulness |   actionability |   format_adherence |   ambiguity |   multimodal |   escalation |   empathy |
 |:--------------------|--------------:|---------------:|----------------:|-------------------:|------------:|-------------:|-------------:|----------:|
-| Gemini 2.5 Pro      |          3.29 |           2.71 |            3.29 |               1.43 |        4.57 |         4.29 |         3.86 |      4.43 |
-| Grok 4.20 Reasoning |          2.71 |           2    |            4    |               0    |        4.43 |         4.29 |         3.71 |      4.57 |
+| Gemini 2.5 Pro      |          1.71 |           1.43 |            1.71 |                  0 |        3.57 |         3.57 |         2.57 |      4.14 |
+| Grok 4.20 Reasoning |          2    |           1.43 |            3    |                  0 |        4    |         3.57 |         3    |      4.14 |
 
+### Performance Metrics
+1. **Latency:** The total time (in seconds) the bot took to process and reply.
+2. **Token Usage:** The amount of "data" processed by the model (input + output). This directly affects operational cost.
 ## 2. Performance & Cost Metrics (Avg)
 
 | model               |   Avg Latency (s) |   Input Tokens |   Output Tokens |   Total Tokens |
 |:--------------------|------------------:|---------------:|----------------:|---------------:|
-| Gemini 2.5 Pro      |             23.75 |        2703.29 |          388.57 |        6126.86 |
-| Grok 4.20 Reasoning |             16.46 |        3050.43 |          461.86 |        7500.86 |
+| Gemini 2.5 Pro      |             25.96 |        2875    |             383 |        6132.71 |
+| Grok 4.20 Reasoning |             17.51 |        3182.14 |             447 |        7402.86 |
 
 ## 3. Key Insights
 
 ### Gemini 2.5 Pro
-- **Strength:** Ambiguity (4.57)
-- **Potential Area for Improvement:** Format_adherence (1.43)
-- **Avg Turnaround:** 23.75s
-- **Avg Tokens:** 6126 (Input: 2703, Output: 388)
+- **Strength:** Empathy (4.14)
+- **Potential Area for Improvement:** Format_adherence (0.0)
+- **Avg Turnaround:** 25.96s
+- **Avg Tokens:** 6132 (Input: 2875, Output: 383)
 
 ### Grok 4.20 Reasoning
-- **Strength:** Empathy (4.57)
+- **Strength:** Empathy (4.14)
 - **Potential Area for Improvement:** Format_adherence (0.0)
-- **Avg Turnaround:** 16.46s
-- **Avg Tokens:** 7500 (Input: 3050, Output: 461)
+- **Avg Turnaround:** 17.51s
+- **Avg Tokens:** 7402 (Input: 3182, Output: 447)
 
 ## 4. Case-by-Case Breakdown
 
 ### Model: Gemini 2.5 Pro
 #### Case ZT-001: I am getting an error message during end of month reporting ...
 - **Total Score:** 8/40
-- **Latency:** 32.06s | **Tokens:** 5343
-- **Judge Reasoning:** *The AI failed to provide a solution despite the ground truth indicating a clear cause and resolution. Instead, it asked a clarifying question ('Which end-of-month process is generating the error?') which deviates from the expected action of 'PROVIDE_SOLUTION'. The question itself is not incorrect but is unnecessary given the ground truth's direct answer. It did not adhere to the required format and provided no actionable steps.*
+- **Latency:** 38.39s | **Tokens:** 5096
+- **Judge Reasoning:** *The AI failed to understand the user's query, which was specific enough for a direct solution. The user clearly stated 'posting JE batches' and 'end of month reporting,' which the ground truth directly addresses. The AI incorrectly asked for clarification instead of providing a solution, did not adhere to the required format, and did not utilize the provided KB context.*
 
 **AI Response:**
 ```
-Which end-of-month process is generating the error?
+Regarding the batch posting error, which process is failing?
 ```
 ---
 
 #### Case ZT-002: I cannot access any tickets for DC33 or JFK in Zoho with my ...
-- **Total Score:** 33/40
-- **Latency:** 25.33s | **Tokens:** 5956
-- **Judge Reasoning:** *The AI correctly identified the issue as a permissions problem requiring escalation, which aligns with the ground truth. It also correctly decided to escalate and create a ticket. The tone is empathetic. However, it completely failed to adhere to the required output format, missing all four specified headers. Actionability is rated 3 because while the AI outlines its own next steps, it doesn't provide numbered steps for the user, which is appropriate given the issue but still not 'clear, easy, numbered steps' for the user to perform.*
+- **Total Score:** 19/40
+- **Latency:** 22.31s | **Tokens:** 5511
+- **Judge Reasoning:** *The AI correctly identifies the issue and the cause, aligning with the KB. However, it fails to provide the resolution steps as outlined in the ground truth. Instead of initiating the request and providing the full resolution, it asks for confirmation to proceed, which deviates from the expected 'PROVIDE_SOLUTION' action. It also completely fails to adhere to the required format headers. The AI states 'There are no troubleshooting steps you can perform on your end,' which contradicts step 1 of the ground truth's resolution.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're getting an "access denied" error when trying to view tickets for the **DC33** and **JFK** departments in **Zoho**. This issue typically occurs when a user's profile permissions are not correctly configured to grant visibility into those specific ticket groups.
+I understand you're getting an "access denied" error when trying to view tickets for **DC33** and **JFK** in **Zoho**. This issue typically occurs when a user's role permissions within the application are not correctly configured for those specific departments or ticket groups.
 
-Since this requires an adjustment to your backend permissions, I will need to escalate this to our application administrators. They will review your account and grant you the necessary access to the **DC33** and **JFK** queues.
+Since this is a server-side permission setting, it requires an administrator to grant your account the necessary access. There are no troubleshooting steps you can perform on your end to resolve this.
 
-I will open a ticket to track this request, and you will be notified as soon as your access has been restored.
+I will need to create a request with our Applications team to have your permissions updated for the **DC33** and **JFK** ticket groups. Can you confirm you would like me to proceed?
 ```
 ---
 
 #### Case ZT-003: Retirees who are under the HMO plan are still showing as act...
-- **Total Score:** 29/40
-- **Latency:** 24.34s | **Tokens:** 7354
-- **Judge Reasoning:** *The AI correctly identified that the user cannot self-solve this issue and that it requires escalation, which aligns with the KB stating 'Support corrected'. It also correctly asked for necessary information (Member IDs) to facilitate the escalation. However, the AI introduced details about the 'backend processing error' as the cause and 'manual intervention from our data administration team' as the resolution method, which are not present in the retrieved KB context, impacting faithfulness and correctness. The response also failed to adhere to the required output format by not using the specified headers.*
+- **Total Score:** 31/40
+- **Latency:** 30.24s | **Tokens:** 7625
+- **Judge Reasoning:** *The AI's response provides a plausible solution to the user's problem, making it largely correct. However, it deviates significantly from the specific cause and resolution steps outlined in the ground truth, impacting faithfulness. The AI completely failed to adhere to the required format by not including any of the specified headers. Actionability, ambiguity handling, escalation logic, and empathy are all well-executed.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're seeing retirees under the HMO plan incorrectly listed as active on the eligibility file. This issue typically arises from a backend processing error where the system fails to correctly apply the termination status to the member's record before the eligibility file is generated.
+I understand you're seeing retirees who are under the HMO plan still showing as active on the eligibility file. This issue often occurs when a member's record is inadvertently active in multiple plans at once, or when the termination date for their old plan has not been processed correctly, leading to a data conflict in the eligibility report.
 
-Correcting this requires manual intervention from our data administration team, as they need to access the benefits system directly to force the update. To move forward, I will need to escalate this issue. Could you please provide the specific Member IDs for the retirees who are affected?
+To resolve this, you will need to manually correct the member's plan status:
 
-Once I have those details, I will create a ticket and escalate it to the appropriate team for immediate correction.
+1.  Locate the specific retiree's member record in the benefits administration system.
+2.  Review their plan enrollment history to verify if they are active in both the old **HMO** plan and a new plan.
+3.  If a duplicate active plan is found, you will need to terminate the outdated **HMO** plan by setting the correct end date for that coverage.
+4.  After updating the record, regenerate the eligibility file to confirm the retiree is no longer listed as active under the incorrect plan.
+
+If the issue persists after these steps, please let me know and I can escalate this to our data team for a backend review.
 ```
 ---
 
 #### Case ZT-004: The address book is not letting me add a blank value to a fi...
-- **Total Score:** 19/40
-- **Latency:** 19.32s | **Tokens:** 5809
-- **Judge Reasoning:** *The AI's explanation for the issue ('by design', 'required fields') and proposed resolution ('change request' from 'development team') directly contradicts the ground truth, which states 'Support confirmed this should be allowed and applied the fix'. This indicates a misunderstanding of the problem's nature and resolution. The AI hallucinates the cause and resolution. It also fails to adhere to the required output format and chooses an incorrect escalation path (offering to create a change request ticket instead of providing a solution or confirming a fix).*
+- **Total Score:** 8/40
+- **Latency:** 28.04s | **Tokens:** 6775
+- **Judge Reasoning:** *The AI completely ignored the provided ground truth which offered direct resolution steps. Instead, it immediately asked for clarification, which was only suggested in the ground truth's 'Next Steps' if the initial resolution failed. It did not provide any actionable steps or adhere to the required format. While the tone was empathetic, the core purpose of providing a solution was missed.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're unable to add a blank value to a field in the address book. This is typically by design, as many fields are configured as 'required' to ensure data integrity and prevent essential information from being left empty.
+I understand you're unable to save a blank value in an address book field. This is often intentional system behavior, as many fields are configured as 'required' to ensure data integrity and prevent errors in downstream processes that rely on that information.
 
-Allowing a blank value for a specific field requires a configuration change from our development team to adjust its validation rules. I can submit a ticket on your behalf to have them review this as a potential change request.
+To properly assess this, could you please tell me which specific field you are trying to leave blank? Knowing the field and the business context will allow me to check its configuration and see if an exception can be made or if there is an alternative solution.
 
-Would you like me to proceed with creating that ticket for you?
+Let me know the details, and I will investigate the validation rules for that field.
 ```
 ---
 
 #### Case ZT-005: We need to close the Daiwa fiscal year end. What is the proc...
-- **Total Score:** 39/40
-- **Latency:** 16.75s | **Tokens:** 6089
-- **Judge Reasoning:** *The AI correctly identifies that the fiscal year-end close is a complex process requiring specialist intervention, aligning with the implication in the ground truth that 'Support walked through' it, suggesting it's not a self-service task. It offers a clear, actionable escalation path by creating a high-priority ticket. While the KB doesn't explicitly state it's 'not user-facing' or 'must be performed by a specialist,' this is a very reasonable and likely accurate inference for such a critical financial operation, hence a 4 for faithfulness. The AI correctly determines that a direct resolution with steps is not possible and thus doesn't apply the resolution format, which is appropriate. The tone is empathetic and professional.*
+- **Total Score:** 14/40
+- **Latency:** 20.6s | **Tokens:** 5451
+- **Judge Reasoning:** *The AI failed to provide the resolution steps available in the KB context. Instead of solving the problem as expected, it opted to escalate by offering to create a ticket. It also did not adhere to the required format.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're looking for the procedure for the Daiwa fiscal year-end closing. This is a critical and sensitive financial operation that is managed by a dedicated team to ensure data integrity and compliance. Due to the complexity involved, this process isn't documented as a standard user-facing procedure.
+I understand you're ready to begin the Daiwa fiscal year-end close. This is a critical and highly controlled process that is managed directly by our Core Financial Applications team in coordination with the Finance department to ensure the integrity of the financial data.
 
-The year-end close must be performed by a specialist from our **Finance Systems** team. I can create a high-priority service request and assign it directly to them to coordinate and execute this process with you.
+Due to the security and complexity involved, this process requires direct intervention from the specialized application support team. I can facilitate this for you by formally submitting a request on your behalf.
 
-Would you like me to proceed with creating and assigning that ticket for you?
+Would you like me to create a ticket and assign it to the **Core Financial Applications** team to get this process started for you?
 ```
 ---
 
 #### Case ZT-006: I need to remove a member from the eligibility file. How do ...
-- **Total Score:** 27/40
-- **Latency:** 29.49s | **Tokens:** 7046
-- **Judge Reasoning:** *The AI's response provides actionable steps but introduces specific names (Ashok Chinthala, Debiprasad Mohanty) and a 'Data Management team' that are not present in the provided KB context, indicating a hallucination. It also misses the 'effective date' mentioned in the ground truth for the termination request. Crucially, it failed to adhere to the required output format by not including the specified headers.*
+- **Total Score:** 18/40
+- **Latency:** 18.53s | **Tokens:** 6206
+- **Judge Reasoning:** *The AI's response fails significantly in several areas. It does not adhere to the required format, missing all four specified headers. It hallucinates specific email addresses (Ashok Chinthala, Debiprasad Mohanty) that are not present in the provided KB context or ground truth. It also misses crucial information from the ground truth, such as specifying the 'Effective Removal Date' and the term 'Termination Request'. While it provides numbered steps, the steps are incomplete and contain ungrounded information, severely impacting correctness and faithfulness.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I can certainly clarify the process for handling a member removal from an eligibility file. These types of data modifications are managed by a dedicated team to ensure data integrity and maintain a clear audit trail, which is why there isn't a direct user-facing tool for this task.
+I understand you need to process a request to remove a member from the eligibility file. These types of requests are managed through a formal email process to ensure proper tracking and data integrity for our clients.
 
-To process this request, please follow the internal procedure below:
+To proceed with the removal, please follow this procedure:
 
-1.  Ensure you have the original request from the client, typically in an email format.
-2.  Forward the complete email request to our **Data Management** team. Based on historical tickets, the primary contacts for this are **Ashok Chinthala** and **Debiprasad Mohanty**.
-3.  Before forwarding, please verify the request clearly includes the member's full name and unique Member ID to ensure the correct record is removed.
+1.  Draft an email with the subject line "Request to Remove Member from Eligibility File".
+2.  In the body of the email, please include the member's full name and their Member ID to ensure we remove the correct individual.
+3.  Send this request to the primary contacts for these changes: **Ashok Chinthala (achinthala@pcbapps.com)** and **Debiprasad Mohanty (mdebiprasad@pcbapps.com)**.
 
-The Data Management team will then process the removal and confirm once it has been completed. If you have any further questions, please don't hesitate to ask.
+Once the team receives the request, they will process the removal and confirm with you once it is complete.
 ```
 ---
 
 #### Case ZT-007: Something is broken in the system....
-- **Total Score:** 40/40
-- **Latency:** 18.98s | **Tokens:** 5291
-- **Judge Reasoning:** *The AI correctly identified the vagueness of the user's query and asked appropriate clarifying questions, aligning perfectly with the ground truth and expected action. The tone is empathetic and professional. The numbered questions make it actionable for the user. Format adherence is 5 as no specific headers were expected for a clarification response.*
+- **Total Score:** 33/40
+- **Latency:** 23.59s | **Tokens:** 6265
+- **Judge Reasoning:** *The AI correctly identified the need for clarification and asked relevant questions, aligning with the expected action and the ground truth's intent. It maintained an empathetic and professional tone. However, it completely failed to adhere to the required format, missing all four specified headers. The questions asked were good, though not an exact match to the ground truth's questions, they served the same purpose of gathering necessary information.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're experiencing an issue with one of our systems. To help me investigate and resolve this for you as quickly as possible, I'll need a little more information to identify the specific application and the nature of the problem.
+I'm sorry to hear you're encountering an issue with the system. To help me investigate this effectively and provide an accurate solution, I'll need a few more details about the specific problem you're experiencing.
 
-Could you please provide a few more details?
+To help me diagnose the issue, could you please provide the following information:
 
-1.  Which application are you having trouble with?
-2.  What is the exact error message you are receiving?
-3.  If possible, could you please provide a screenshot of the issue?
+1.  Which **application** or part of the system were you using when the problem occurred?
+2.  What specific action were you trying to perform?
+3.  If you are seeing an error message, please provide the exact text or a screenshot of the error.
 
-Once I have these details, I can provide you with the correct resolution steps.
+Once I have these details, I can provide a targeted solution or determine the next steps.
 ```
 ---
 
 
 ### Model: Grok 4.20 Reasoning
 #### Case ZT-001: I am getting an error message during end of month reporting ...
-- **Total Score:** 34/40
-- **Latency:** 14.5s | **Tokens:** 6885
-- **Judge Reasoning:** *The AI correctly identified plausible causes (unbalanced entries, record lock) and provided resolution steps that align with the ground truth's core resolution of deleting unposted/erroneous entries and reposting. The steps are actionable and the escalation logic is sound. However, it failed to adhere to the required output format by not using the specified headers.*
+- **Total Score:** 32/40
+- **Latency:** 29.79s | **Tokens:** 7044
+- **Judge Reasoning:** *The AI's response correctly identifies the cause and provides actionable steps to resolve the issue, aligning well with the ground truth's core resolution. It even adds specific system context (JDE, Work Center) which is helpful. However, it completely failed to adhere to the required output format by not using the specified headers.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-This error during end of month reporting when posting JE batches, where the batch shows **Error** status with a difference amount, is typically caused by unbalanced journal entries (debits not equaling credits) or a record lock from another user. This is a common issue in **JDE** during period-end processing.
+The error you're seeing during end of month reporting when posting JE batches, with the batch status showing **Error** and a difference amount, is almost always caused by an out-of-balance journal entry (debits not equaling credits) or a data conflict in the JDE posting process.
 
 To resolve this, please follow these steps:
 
-1. Log into **JDE** and open the **Work Center**.
-2. Locate the failed batch and review the detailed error message (commonly 'Poster Out of Balance').
-3. If it indicates a record lock, ask the user currently holding the record to exit their session completely.
-4. Open the batch in the journal entry screen, identify and delete any unbalanced or erroneous lines causing the difference.
-5. Save the batch and attempt to post it again.
+1. In **JDE**, go to the **Work Center** and review the full error message for the batch.
+2. If it shows 'Poster Out of Balance', open the batch in **Journal Entries** and check the line items for the exact difference amount.
+3. Correct or delete the unbalanced entries, then re-post the batch.
+4. If a 'Record Locked' message appears, ask the user who has the record open to exit their session and try posting again.
 
-If the batch still fails after these steps, please let me know the exact error text from the Work Center and I can guide you further or escalate to the JDE team.
+If the batch still fails after these steps, please reply with the exact error text from the Work Center so I can investigate further.
 ```
 ---
 
 #### Case ZT-002: I cannot access any tickets for DC33 or JFK in Zoho with my ...
-- **Total Score:** 32/40
-- **Latency:** 14.34s | **Tokens:** 6241
-- **Judge Reasoning:** *The AI correctly identified the cause (permissions) and the escalation path aligns with the ground truth's resolution. However, the initial troubleshooting steps (log out/in, incognito) are unlikely to resolve a permissions issue directly. The response failed to adhere to the required format by not using the specified headers.*
+- **Total Score:** 19/40
+- **Latency:** 15.15s | **Tokens:** 7464
+- **Judge Reasoning:** *The AI's response deviates significantly from the ground truth's resolution. The ground truth states the AI initiates a request to a System Administrator, whereas the AI's response provides user-side troubleshooting steps and then incorrectly implies it can update permissions directly. It also fails to adhere to the required format and includes a hardcoded, incorrect email address.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're getting an access denied error when trying to view any DC33 or JFK tickets in **Zoho**. This is typically caused by your user profile missing the required department or client-specific permissions that were recently updated in the backend **Zoho Desk** configuration.
+I understand you're getting an access denied error when trying to view any **DC33** or **JFK** tickets in **Zoho**. This is typically caused by your account lacking the specific department or client-group permissions for those locations, which were likely not updated after a recent role or client assignment change.
 
 To resolve this, please follow these steps:
 
-1. Completely log out of **Zoho** and close all browser windows.
-2. Open an incognito/private browsing window and navigate to **zoho.com**.
-3. Log in with your **test@pcbapps.com** credentials and go directly to the **Tickets** tab.
-4. Use the filter to select **DC33** or **JFK** and check if the tickets now load.
+1. Completely log out of **Zoho Desk**.
+2. Clear your browser cache and cookies for all **zoho.com** domains.
+3. Log back in with **test@pcbapps.com** and navigate to the **Tickets** module.
+4. Remove any active filters and select **All Tickets** from the left menu to test visibility.
 
-If you still receive the access denied message after these steps, please let me know the exact error text and I can escalate this to our Zoho administrator to update your permissions.
+If you still see the access denied message after these steps, please let me know the exact error text and I can update your permissions directly.
 ```
 ---
 
 #### Case ZT-003: Retirees who are under the HMO plan are still showing as act...
-- **Total Score:** 23/40
-- **Latency:** 14.39s | **Tokens:** 7528
-- **Judge Reasoning:** *The AI's response provides a plausible technical solution with clear steps. However, it completely hallucinates the cause and resolution steps as they are not present in the provided KB context. The KB only states that 'Support corrected the eligibility file records', implying an internal action, whereas the AI provides steps for the user to perform. This makes the response unfaithful to the KB and questionable in terms of correctness regarding the appropriate actor for the fix. It also failed to adhere to the required output format headers.*
+- **Total Score:** 26/40
+- **Latency:** 16.58s | **Tokens:** 7491
+- **Judge Reasoning:** *The AI provides actionable steps that would likely resolve the user's issue, demonstrating good correctness in its proposed solution. However, it significantly deviates from the specific system names and action descriptions provided in the ground truth, leading to a low faithfulness score. It completely fails to adhere to the required format headers. Actionability, ambiguity handling, escalation logic, and empathy are all excellent.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-Retirees under the **HMO** plan are continuing to appear as active on the eligibility file because the termination or plan-end record was not fully processed, often due to a missing or miscalculated eligibility end date that prevents the nightly export from reflecting the correct status.
+This issue typically occurs when a retiree's HMO plan termination or retirement status flag hasn't been fully applied in the eligibility database, so the nightly file export continues to list them as active members.
 
 To resolve this, please follow these steps:
 
-1. Log into the **Benefits Administration System**.
-2. Go to **Member Search**, enter the retiree's **P/N**, and open their record.
-3. Navigate to the **Coverage Details** tab, locate the **HMO** plan line, and update the **Status** to **Terminated**.
-4. Enter the correct **Eligibility End Date** (typically the retirement effective date) and save the record.
-5. Run **Generate Eligibility File** from the **Reports** menu and verify the retiree no longer shows as active.
+1. Open the **Eligibility Management** application and search for the retiree using their **P/N** or member ID.
+2. Navigate to the **Coverage History** tab and locate the active **HMO** line.
+3. Enter the correct **Termination Date** (usually the retirement effective date) and update the **Status** to **Terminated**.
+4. Click **Save** and then run **Generate Eligibility File** from the **Reports** menu to validate the change.
+5. Review the output file to confirm the member no longer appears as active.
 
-If the retirees still appear active after regenerating the file, please let me know the specific P/Ns affected so I can review the backend records.
+If the retiree is still appearing after these steps, let me know the specific P/N and I can review the record directly.
 ```
 ---
 
 #### Case ZT-004: The address book is not letting me add a blank value to a fi...
-- **Total Score:** 21/40
-- **Latency:** 15.58s | **Tokens:** 7937
-- **Judge Reasoning:** *The AI's response contradicts the ground truth. The ground truth states that blank values *should* be allowed and a fix was applied. The AI's response provides reasons why blank values might *not* be allowed (UDC table, required field validation) and suggests workarounds or configuration changes, which is not aligned with the system's intended behavior after the fix. The format adherence is also poor as it did not use the specified headers.*
+- **Total Score:** 17/40
+- **Latency:** 12.55s | **Tokens:** 7143
+- **Judge Reasoning:** *The AI correctly identifies the cause but provides a workaround (entering a space) instead of the root cause resolution steps outlined in the ground truth (UDC maintenance, system fix). The resolution steps are not faithful to the provided context. It completely fails on format adherence by not using the specified headers. It correctly asks for more information if its suggestion doesn't work, which is good ambiguity handling and a reasonable escalation path.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand the **Address Book** is blocking you from saving a blank value in a field. This usually occurs when the field is tied to a UDC table or has a required-field validation rule enabled to maintain data integrity, which is the default behavior in the current configuration.
+This issue in the **Address Book** typically happens because the field has an active validation rule or UDC linkage that enforces a required value to maintain data consistency, blocking true blank entries.
 
-To resolve this, please follow these steps:
+To work around this, please follow these steps:
 
 1. Open the **Address Book** module and locate the affected record.
-2. Switch to **Edit** mode and click the **Field Help** or **Visual Assist** button on the restricted field.
-3. If a UDC search window appears, check whether a blank or "N/A" option exists; if not, enter a single space as a temporary placeholder and attempt to save.
-4. If the error persists, go to **System Setup** > **UDC Maintenance**, search for the related code type, and verify if a blank value row needs to be added (requires appropriate permissions).
+2. Click **Edit** to enter update mode.
+3. In the restricted field, enter a single space character rather than leaving it empty.
+4. Click **Save** and confirm the record updates successfully.
 
-If these steps don't allow the blank value or you receive a specific error message, let me know the exact field name and I'll investigate further.
+If the field still rejects the change or you need the value to be completely null, please reply with the exact field name so I can review the configuration.
 ```
 ---
 
 #### Case ZT-005: We need to close the Daiwa fiscal year end. What is the proc...
-- **Total Score:** 25/40
-- **Latency:** 21.69s | **Tokens:** 8719
-- **Judge Reasoning:** *The AI hallucinated specific steps for the fiscal year-end close that are not present in the provided ground truth or KB context. The ground truth only states that 'Support walked through the required steps' but does not list them. The AI also failed to adhere to the required output format by not using the specified headers.*
+- **Total Score:** 24/40
+- **Latency:** 22.22s | **Tokens:** 8618
+- **Judge Reasoning:** *The AI's response provides plausible steps for a fiscal year-end close, but these steps do not align with the specific 'Resolution Steps' provided in the ground truth, indicating a lack of correctness and faithfulness to the golden answer. It seems to have generated its own set of steps. The AI completely failed to adhere to the required format, missing all specified headers. While the steps are numbered and actionable, their deviation from the ground truth reduces their overall value. The escalation logic is reasonable, and the tone is professional.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-The Daiwa fiscal year-end close is a high-priority finance operation that requires system stability over the next two weeks, as flagged in the business-wide notice. This period focuses on finalizing all transactions and reports, and disruptions often stem from unposted entries, access conflicts, or unmonitored application errors.
+The Daiwa fiscal year-end close is a critical finance operation that locks prior-year records, posts final adjustments, and prevents further transactions from being recorded against the closed period. This process is especially important over the next two weeks to maintain data integrity and support accurate reporting.
 
-To support the close process, please follow these steps:
+To complete the close, please follow these steps:
 
-1. Confirm with the finance team that all transactions are posted in the **Daiwa accounting system**.
-2. Open **Control Panel** > **Administrative Tools** and run a quick **Event Viewer** check for any errors under the **Application** log related to finance apps.
-3. Log into the **Daiwa portal** and navigate to **Period Close** > **Run Reconciliation** to validate balances.
-4. Once verified, execute the **Fiscal Year Close** function and export the final **trial balance report**.
-5. Return any related hardware or access tokens to the **IT Assets desk** if team members are changing roles during this close.
+1. Log into the **Daiwa Finance System** and confirm all transactions for the current fiscal year have been entered and reconciled.
+2. Navigate to **Period End** > **Year End Close**.
+3. Select **Daiwa** as the entity and choose the correct **Fiscal Year**.
+4. Click **Run Pre-Close Validation** and resolve any exceptions shown in the report.
+5. Once validation passes, select **Close Fiscal Year** and enter your approval credentials when prompted.
+6. Review and post the generated **Closing Entries**, then run the final **Year-End Financial Reports**.
 
-If the close encounters any system errors or you need a specific access adjustment, reply with the exact message you're seeing and I'll assist further.
+If the **Close Fiscal Year** button is unavailable or you receive any validation errors, let me know the exact message and I can assist further or loop in the finance systems team.
 ```
 ---
 
 #### Case ZT-006: I need to remove a member from the eligibility file. How do ...
-- **Total Score:** 34/40
-- **Latency:** 20.25s | **Tokens:** 8366
-- **Judge Reasoning:** *The AI's response correctly identifies the process for removing a member from the eligibility file, aligning with the ground truth. It provides clear, actionable, numbered steps for the user to follow. The tone is professional and helpful, even offering to assist with initial logging. However, it failed to adhere to the specified output format by not including the required headers (Issue Analysis, Cause, Resolution Steps, Next Steps). The mention of a specific ticket number is an embellishment not directly from the provided KB snippet, leading to a slightly reduced faithfulness score, though it doesn't detract from the core solution.*
+- **Total Score:** 20/40
+- **Latency:** 13.52s | **Tokens:** 7377
+- **Judge Reasoning:** *The AI's response fails to adhere to the required format, missing all four specified headers. It also hallucinates critical information such as the email address (`support@pcbapps.com`), the subject line (`Request to take off eligibility file`), and additional required fields like DOB and reason for removal, which are not present in the ground truth. Conversely, it misses key information from the ground truth, such as sending the request to the 'Data Management team' and specifying the 'Effective Removal Date'. While it provides numbered steps, they are incorrect and not fully actionable due to the inaccuracies. The escalation logic is partially correct in attempting to provide a solution, but the solution itself is flawed.*
 
 **AI Response:**
 ```
 Hi Tester,
 
-Removing a member from the eligibility file is a standard update to maintain accurate benefits data, typically requested when a member's status changes. Our team processes these by updating the source data before the next file generation cycle, exactly as handled in prior tickets such as 111007000021084002.
+Removing a member from the eligibility file is a standard data maintenance request that must be processed manually to maintain audit compliance and prevent unintended impact on the automated benefits feed. These updates are tracked through dedicated request tickets rather than direct file edits.
 
-To process this request, please follow these steps:
+To process this correctly, please follow these steps:
 
-1. Collect the member's **full name**, **Member ID**, **DOB**, **effective removal date**, and reason.
-2. Create a new email using the exact subject **"Request to take off eligibility file"**.
-3. Address it to **support@pcbapps.com** (or the client contact if this is inbound) and include all details in the body.
-4. Send the email so the Operations team can log the ticket and apply the update to the master eligibility file.
-5. Monitor the ticket for confirmation once the revised file is generated and tested.
+1. Gather the member's **Member ID**, full name, DOB, and the exact reason for removal.
+2. Open your email client and create a new message addressed to **support@pcbapps.com**.
+3. Use the subject line **"Request to take off eligibility file"** and include all member details plus any supporting documentation in the body.
+4. Send the email and retain the confirmation for your records.
 
-If you have the member details ready or this is an urgent client request, share them here and I'll handle the initial logging for you. Let me know how else I can help.
+If you provide the member details here, I can help format the request for you. Let me know how else I can assist.
 ```
 ---
 
 #### Case ZT-007: Something is broken in the system....
-- **Total Score:** 11/40
-- **Latency:** 14.44s | **Tokens:** 6830
-- **Judge Reasoning:** *The user query is extremely vague. The ground truth explicitly states that the bot must ask clarifying questions *before attempting to provide a solution*. The AI, however, immediately jumps to assuming potential causes ('backend service update or when local cache and session data become corrupted' - a hallucination as it's not grounded in context) and provides troubleshooting steps. While it eventually asks for more details, it does so *after* attempting a solution, which contradicts the expected behavior. It also failed to use the required headers.*
+- **Total Score:** 10/40
+- **Latency:** 12.79s | **Tokens:** 6683
+- **Judge Reasoning:** *The user query is extremely vague ('Something is broken in the system'). The AI makes significant assumptions about the nature of the problem (e.g., 'cached session data', 'ITSM platform', 'PCB Apps', 'Chrome') and provides specific resolution steps based on these assumptions, rather than clarifying the issue first. This is a hallucination of the problem and solution. The ground truth correctly identifies the need for clarification. The AI also fails to adhere to the required output format and the expected escalation logic (CLARIFY).*
 
 **AI Response:**
 ```
 Hi Tester,
 
-I understand you're seeing a generic "something is broken" issue in the system. This usually occurs after a backend service update or when local cache and session data become corrupted, preventing normal connectivity.
+It looks like you're running into a general system issue, which is often caused by cached session data, a temporary backend service hiccup, or a stale connection in the ITSM platform. These problems are common after updates or prolonged sessions and can usually be cleared with basic client-side resets.
 
-To resolve this, please follow these steps:
+To resolve this, please try the following:
 
-1. Completely close all applications and **restart** your computer.
-2. After reboot, open **Task Manager** (press **Ctrl + Shift + Esc**) and end any lingering processes related to **PCB Apps** or your browser.
-3. Re-launch the system and test the affected area again.
-4. If an error appears, note the exact message or code.
+1. Fully close your browser and reopen **PCB Apps** in a fresh **Chrome** window.
+2. Press **Ctrl + Shift + N** to open an **Incognito** window and log in to test.
+3. If the problem continues, go to **Chrome Settings > Privacy and security > Clear browsing data**, select **Cached images and files**, then clear and retry.
+4. Restart your computer and sign back into the system.
 
-If the issue persists after these steps, please reply with more details on the specific error or area that's broken so I can provide a targeted fix.
+If the issue is still present after these steps, please reply with the exact error message or what specific part of the system is broken so I can dig deeper.
 ```
 ---
 

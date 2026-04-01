@@ -20,4 +20,5 @@ instantclient/
 
 # Evaluations 
 evaluations/results/*
-!evaluations/results/*latest*
+!evaluations/results/PROMPT_REPORT.md
+!evaluations/results/prompt_comparison.csv

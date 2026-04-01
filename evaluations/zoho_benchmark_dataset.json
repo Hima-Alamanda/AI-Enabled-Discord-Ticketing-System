@@ -3,7 +3,7 @@
     "id": "ZT-001",
     "category": "Zoho-Ticket",
     "query": "I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.",
-    "ground_truth": "The batch had unposted entries causing the error. Support resolved it by deleting the unposted entries and reposting the batch. The batch status changed to posted successfully.",
+    "ground_truth": "I understand you're encountering an error status and an out-of-balance difference amount when attempting to post Journal Entry (JE) batches during your month-end reporting process. This typically occurs when a batch contains unposted or unbalanced entries that prevent the system from finalizing the total amount, often due to debits and credits not matching or a record lock.\n\nTo resolve this, please follow these steps:\n\n1. Open the **Batch Review** screen and identify the specific batch with the \"Error\" status.\n2. Locate and delete any **Unposted Entries** or erroneous lines within that batch.\n3. Verify that the total **Debits** and **Credits** are equal to bring the difference amount to zero.\n4. Select the batch and click **Repost** to finalize the transaction.\n\nOnce the batch status changes to \"Posted Successfully,\" you can proceed with your reporting; if the error persists, please let me know.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests resolution of JE batch posting errors — from active Zoho ticket #3052."
   },
@@ -11,7 +11,7 @@
     "id": "ZT-002",
     "category": "Zoho-Archive",
     "query": "I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.",
-    "ground_truth": "The user's Zoho account did not have permissions to access DC33 or JFK tickets. Support investigated the access permissions and resolved the login access issue.",
+    "ground_truth": "I see that you're receiving an \"access denied\" error when attempting to view or manage tickets for the **DC33** and **JFK** departments in Zoho Desk. This issue is caused by your current Zoho user profile lacking the necessary department-level permissions required to view restricted queues for these specific locations.\n\nTo resolve this, please follow these steps:\n\n1. Log out of **Zoho Desk** and clear your browser cache.\n2. I have initiated a request to the **System Administrator** to update your account visibility.\n3. Once approved, specialized permissions for **DC33** and **JFK** will be added to your profile.\n4. Log back in and verify that the tickets are visible in your dashboard.\n\nI will notify you as soon as the administrator confirms your access has been enabled.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests access permission issues — from archived Zoho ticket 2021."
   },
@@ -19,7 +19,7 @@
     "id": "ZT-003",
     "category": "Zoho-Archive",
     "query": "Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?",
-    "ground_truth": "Retirees covered under HMO were incorrectly marked as active on the eligibility file. Support corrected the eligibility file records to reflect the correct retired status.",
+    "ground_truth": "I understand that retirees under the **HMO plan** are incorrectly appearing as \"Active\" on your eligibility file, which should ideally reflect their retired status. This discrepancy usually arises from a backend synchronization delay or a missing termination date in the benefits eligibility records, preventing the file from updating correctly.\n\nTo resolve this, please follow these steps:\n\n1. Locate the affected retiree records in the **Benefit Administration** system.\n2. Manually adjust the status from \"Active\" to \"Retired\" for each individual.\n3. Verify that the **HMO Plan** line includes the correct retirement effective date.\n4. Generate a fresh **Eligibility File** to confirm the corrections have been applied.\n\nIf the records are still showing as active in the next file export, please provide the specific Member IDs for further investigation.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests eligibility file corrections — from archived Zoho ticket 2021."
   },
@@ -27,7 +27,7 @@
     "id": "ZT-004",
     "category": "Zoho-Ticket",
     "query": "The address book is not letting me add a blank value to a field. Can you help?",
-    "ground_truth": "The address book field was not accepting blank as a valid value. Support confirmed this should be allowed and applied the fix so blank values are accepted in the field.",
+    "ground_truth": "You're reporting that the **Address Book** module is not allowing you to save a blank value in a specific field, which is hindering your data entry. This is often caused by a field validation rule or a **UDC (User Defined Code)** setting that marks the field as \"Required,\" even when a blank value should technically be acceptable.\n\nTo resolve this, please follow these steps:\n\n1. Open the **UDC Maintenance** screen for the specific field type.\n2. Confirm if a \"Blank\" or \"N/A\" row is allowed in the validation table.\n3. Apply the system fix to disable the mandatory field requirement for this specific module.\n4. Refresh the **Address Book** and save the record with the blank value to verify.\n\nIf the system still prompts for a value, please share the exact field name so we can adjust the backend database constraints.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests address book UDC field validation fix — from active Zoho ticket."
   },
@@ -35,7 +35,7 @@
     "id": "ZT-005",
     "category": "Zoho-Ticket",
     "query": "We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?",
-    "ground_truth": "The Daiwa fiscal year-end close is a multi-step process. Support walked through the required steps and timing with the team to complete the close successfully.",
+    "ground_truth": "You've asked for guidance on the process for closing the **Daiwa fiscal year-end**, which is a critical multi-step financial operation. A fiscal year-end close is a complex procedure involving high-priority reconciliations, audit trails, and system freezes that require a specific sequence of actions to ensure data integrity.\n\nTo resolve this, please follow these steps:\n\n1. Ensure all manual journal entries for the current year have been finalized and **Posted**.\n2. Run the **General Ledger Trial Balance** to verify all account balances match.\n3. Execute the **Year-End Close** utility in the financial module to roll over balances to the new fiscal year.\n4. Generate the final **Financial Statements** for audit review.\n\nThis process is often managed by the **Finance Systems** team; I can schedule a walkthrough with a specialist if you need step-by-step assistance.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests procedural knowledge of fiscal year-end close — from active Zoho ticket."
   },
@@ -43,7 +43,7 @@
     "id": "ZT-006",
     "category": "Zoho-Archive",
     "query": "I need to remove a member from the eligibility file. How do we process this request?",
-    "ground_truth": "To remove a member from the eligibility file, submit a termination request with the member details and effective date. Support processes the removal and confirms the file update.",
+    "ground_truth": "You need to remove a member from the **Eligibility File** and are lookng for the standard internal process to handle this request. Member removals must be processed through a formal request to the **Data Management team** to maintain a clear audit trail and ensure the source database is updated correctly before the next file generation.\n\nTo resolve this, please follow these steps:\n\n1. Submit a **Termination Request** including the member's full name and unique Member ID.\n2. Clearly specify the **Effective Removal Date** in the request body.\n3. Send the request to the **Data Management** team for processing.\n4. Wait for the confirmation receipt once the eligibility record has been officially deleted.\n\nThe team typically confirms updates within 24 hours; let me know if you need this handled urgently.",
     "expected_action": "PROVIDE_SOLUTION",
     "notes": "Tests eligibility file removal process — from archived Zoho ticket 2021."
   },
@@ -51,7 +51,7 @@
     "id": "ZT-007",
     "category": "Edge-Case",
     "query": "Something is broken in the system.",
-    "ground_truth": "Query is too vague. The bot must ask clarifying questions: which system, what error message, and when did it start before attempting to provide a solution.",
+    "ground_truth": "You've mentioned that \"something is broken in the system,\" but I need a few more details to help you find the specific fix. Without knowing which application you are using or the specific error message you're seeing, I cannot provide an accurate troubleshooting path.\n\nTo resolve this, please follow these steps:\n\n1. Please specify which **Application** or module (e.g., Zoho, JDE, SAP) is showing an issue.\n2. Provide the exact text of any **Error Message** appearing on your screen.\n3. Let me know when the issue started and if an **Image** or screenshot is available.\n\nOnce I have these details, I can provide the exact resolution steps or escalate this to the right specialist for you.",
     "expected_action": "CLARIFY",
     "notes": "Tests that bot asks for more details instead of guessing."
   }

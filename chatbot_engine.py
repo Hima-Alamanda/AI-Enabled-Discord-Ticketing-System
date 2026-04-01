@@ -197,7 +197,8 @@ def get_chatbot_response(
     user_message: str,
     history: list,
     user_context: dict,
-    uploaded_file=None
+    uploaded_file=None,
+    system_prompt_override: str = None
 ) -> dict:
     """
     Main entry point for the chatbot.
@@ -421,7 +422,7 @@ def get_chatbot_response(
             
         response = oci_genai.get_chat_response(
             prompt=f"User: {user_message}\nRespond warmly and briefly.",
-            system_prompt=CHATBOT_SYSTEM_PROMPT,
+            system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
             include_usage=False # Usage is now tracked globally
         )
         result["content"] = response
@@ -486,7 +487,7 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
     try:
         raw_response = oci_genai.get_chat_response(
             prompt=final_prompt,
-            system_prompt=CHATBOT_SYSTEM_PROMPT,
+            system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
             temperature=0.2,
             max_tokens=2500,
             include_usage=False # Usage is now tracked globally
