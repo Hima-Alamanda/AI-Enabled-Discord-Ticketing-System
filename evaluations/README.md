@@ -32,30 +32,7 @@ Scored by an automated AI Auditor (Gemini Flash) using a multi-dimensional rubri
 
 ---
 
-## 3. The Evaluation Pipeline
-
-### **Step 1: Multi-Prompt Strategy Suite**
-Instead of just testing the model, we test different **helpdesk styles** (Prompt Engineering).
-```bash
-python3 evaluations/prompt_evaluation_suite.py
-```
-**Tests 4 Strategies across both Models:**
-*   **PROMPT A:** The Production Standard.
-*   **PROMPT B:** Balanced Expert (High Empathy).
-*   **PROMPT C:** High-Efficiency (Technical/Concise).
-*   **PROMPT D:** Cautious Diagnostic (Deep Investigation).
-
-### **Step 2: Executive Report Generation**
-Aggregates all trial data into a board-ready Excel report.
-```bash
-python3 evaluations/generate_excel_report.py
-```
-**Output:** `EXECUTIVE_PERFORMANCE_REPORT_V7_final.xlsx`
-*   Includes a **Strategic Recommendations** sheet that automatically identifies the "Winner" for every metric.
-
----
-
-## 4. Key Tools
+## 3. Key Tools
 
 | Script | Purpose |
 |:---|:---|
