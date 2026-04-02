@@ -1,12 +1,12 @@
 # Evaluation Report
-**Generated:** 2026-04-01 15:20:00
+**Generated:** 2026-04-02 14:57:29
 
 ## 1. Executive Summary
 We have tested 4 distinct technical prompt strategies across Gemini and Grok models using 7 benchmark cases from Zoho.
 
 ### PROMPT Definitions
-- **PROMPT A:** The current live system prompt used in the AI engine bot.
-- **PROMPT B: Balanced :** Optimized for a polished, professional, and empathetic helpdesk experience.
+- **PROMPT A::** The current live system prompt used in the AI engine bot.
+- **PROMPT B: Balanced Expert:** Optimized for a polished, professional, and empathetic helpdesk experience.
 - **PROMPT C: High-Efficiency:** Focused on pure technical resolution speed by removing all filler words.
 - **PROMPT D: Cautious Diagnostic:** Prioritizes thorough investigation and root-cause mapping before suggesting a fix.
 
@@ -176,34 +176,33 @@ Each model's response is scored by an independent AI Auditor based on this scale
 8. **Empathy:** Whether the bot sounds professional, polite, and helpful.
 
 ### Quality Results (Avg)
-| Prompt_Strategy   | Model               |   Correctness |   Faithfulness |   Actionability |   Format_Adherence |   Ambiguity |   Multimodal |   Escalation |   Empathy |
-|:------------------|:--------------------|--------------:|---------------:|----------------:|-------------------:|------------:|-------------:|-------------:|----------:|
-| PROMPT A          | Gemini 2.5 Pro      |          1.86 |           2    |            1.57 |               4.43 |        4.57 |         3.57 |         2    |      4.29 |
-| PROMPT A          | Grok 4.20 Reasoning |          1.71 |           1.29 |            3.14 |               4.71 |        4.43 |         3.57 |         3.71 |      4.86 |
-| PROMPT B          | Gemini 2.5 Pro      |          2    |           2.14 |            1.86 |               4.14 |        4.29 |         1.43 |         2.43 |      4.57 |
-| PROMPT B          | Grok 4.20 Reasoning |          1.43 |           1.29 |            2.14 |               3.57 |        2.71 |         2.86 |         1.71 |      3.29 |
-| PROMPT C          | Gemini 2.5 Pro      |          2.14 |           2.57 |            3.14 |               4.43 |        4.86 |         2.86 |         3.43 |      4.43 |
-| PROMPT C          | Grok 4.20 Reasoning |          1    |           1    |            2.14 |               3    |        2.86 |         2.86 |         1.29 |      2.71 |
-| PROMPT D          | Gemini 2.5 Pro      |          2.29 |           3.14 |            2.43 |               4.71 |        3.43 |         2.86 |         2.71 |      4.86 |
-| PROMPT D          | Grok 4.20 Reasoning |          1.29 |           1.71 |            1.71 |               3.14 |        2.71 |         1.43 |         1.29 |      3.43 |
+| Prompt_Strategy   | Model               |   Correctness (1-5) |   Faithfulness (1-5) |   Actionability (1-5) |   Format Adherence (1-5) |   Ambiguity Handling (1-5) |   Multimodal (1-5) |   Escalation Logic (1-5) |   Empathy & Tone (1-5) |
+|:------------------|:--------------------|--------------------:|---------------------:|----------------------:|-------------------------:|---------------------------:|-------------------:|-------------------------:|-----------------------:|
+| PROMPT A          | Gemini 2.5 Pro      |                2.75 |                 3    |                  3    |                     3.88 |                       4.75 |               5    |                     3.38 |                   4.62 |
+| PROMPT A          | Grok 4.20 Reasoning |                2.5  |                 2.5  |                  3.12 |                     3.88 |                       3.88 |               4.38 |                     2.75 |                   4    |
+| PROMPT B          | Gemini 2.5 Pro      |                2.62 |                 2.88 |                  3    |                     4.12 |                       4.75 |               5    |                     2.62 |                   4.75 |
+| PROMPT B          | Grok 4.20 Reasoning |                2.88 |                 3.12 |                  3.12 |                     3.88 |                       3.62 |               4.38 |                     2.88 |                   3.88 |
+| PROMPT C          | Gemini 2.5 Pro      |                2.5  |                 3.12 |                  2.5  |                     3.25 |                       4.38 |               4.38 |                     3.12 |                   3.75 |
+| PROMPT C          | Grok 4.20 Reasoning |                2.38 |                 2.5  |                  3    |                     4    |                       3.38 |               4.38 |                     2.62 |                   3.75 |
+| PROMPT D          | Gemini 2.5 Pro      |                2.88 |                 3.25 |                  3    |                     4.25 |                       4.62 |               4.88 |                     3    |                   4.62 |
+| PROMPT D          | Grok 4.20 Reasoning |                2.75 |                 2.88 |                  3.12 |                     4.25 |                       4    |               5    |                     3    |                   4.62 |
 
 ## 3. Mathematical Accuracy (Alignment)
 *   **BLEU Score (Precision):** Measures wording similarity to the expected support answer. Scale: 0-100% (Higher is closer alignment).
 *   **ROUGE-L Score (Recall):** Measures coverage of expected important information. Scale: 0-100% (Higher is better coverage).
+*   **BERTScore:** Measures semantic similarity between the chatbot response and the expected answer using embedding-based matching. **This is one of the strongest metrics for judging response quality because it focuses on meaning, not just exact word overlap.** Scale: 0-100% (higher is better).
 
 ### Model Comparison (Avg %)
-| Prompt   | Model               | bleu_score   | rouge_l_score   |   latency |
-|:---------|:--------------------|:-------------|:----------------|----------:|
-| PROMPT A | Gemini 2.5 Pro      | 7.65%        | 28.01%          |   24.5301 |
-| PROMPT A | Grok 4.20 Reasoning | 17.91%       | 29.12%          |   12.9746 |
-| PROMPT B | Gemini 2.5 Pro      | 10.68%       | 28.56%          |   22.5896 |
-| PROMPT B | Grok 4.20 Reasoning | 12.97%       | 25.90%          |   12.9987 |
-| PROMPT C | Gemini 2.5 Pro      | 5.62%        | 24.32%          |   22.1463 |
-| PROMPT C | Grok 4.20 Reasoning | 7.70%        | 22.21%          |   19.6266 |
-| PROMPT D | Gemini 2.5 Pro      | 6.89%        | 25.05%          |   24.402  |
-| PROMPT D | Grok 4.20 Reasoning | 10.07%       | 24.21%          |   13.7371 |
-
-
+| Prompt   | Model               | bleu_score   | rouge_l_score   | bert_score   |   latency |
+|:---------|:--------------------|:-------------|:----------------|:-------------|----------:|
+| PROMPT A | Gemini 2.5 Pro      | 21.07%       | 37.16%          | 90.06%       |   20.7676 |
+| PROMPT A | Grok 4.20 Reasoning | 23.68%       | 35.54%          | 90.47%       |   12.2916 |
+| PROMPT B | Gemini 2.5 Pro      | 18.30%       | 36.04%          | 89.72%       |   20.8426 |
+| PROMPT B | Grok 4.20 Reasoning | 16.50%       | 31.55%          | 89.73%       |   12.3949 |
+| PROMPT C | Gemini 2.5 Pro      | 13.69%       | 31.89%          | 88.83%       |   20.0476 |
+| PROMPT C | Grok 4.20 Reasoning | 13.09%       | 30.84%          | 89.19%       |   14.188  |
+| PROMPT D | Gemini 2.5 Pro      | 16.38%       | 27.76%          | 88.71%       |   21.3696 |
+| PROMPT D | Grok 4.20 Reasoning | 14.44%       | 28.22%          | 89.21%       |   14.1498 |
 ## 4. Model Capacity (Context Window)
 | Feature | xAI Grok 4.20 (Reasoning) | Google Gemini 2.5 Pro |
 |:---|:---|:---|
@@ -219,77 +218,85 @@ Each model's response is scored by an independent AI Auditor based on this scale
 ### Performance & Cost Metrics (Avg)
 | Prompt   | Model               |   Avg Latency (s) |   Input Tokens |   Output Tokens |   Total Tokens |
 |:---------|:--------------------|------------------:|---------------:|----------------:|---------------:|
-| PROMPT A | Gemini 2.5 Pro      |             24.53 |        2783.14 |          392.71 |        5927.29 |
-| PROMPT A | Grok 4.20 Reasoning |             12.97 |        3108.14 |          438.71 |        7824.57 |
-| PROMPT B | Gemini 2.5 Pro      |             22.59 |        2723.43 |          417.43 |        6144.14 |
-| PROMPT B | Grok 4.20 Reasoning |             13    |        2807.29 |          415.71 |        7423.29 |
-| PROMPT C | Gemini 2.5 Pro      |             22.15 |        2627.71 |          373.43 |        6197.86 |
-| PROMPT C | Grok 4.20 Reasoning |             19.63 |        2691    |          365    |        7632.29 |
-| PROMPT D | Gemini 2.5 Pro      |             24.4  |        2766.43 |          456.57 |        6310.86 |
-| PROMPT D | Grok 4.20 Reasoning |             13.74 |        2794.14 |          429.14 |        7545    |
+| PROMPT A | Gemini 2.5 Pro      |             20.77 |        3133.88 |          427.88 |        6195.12 |
+| PROMPT A | Grok 4.20 Reasoning |             12.29 |        3203.25 |          432    |        7311.12 |
+| PROMPT B | Gemini 2.5 Pro      |             20.84 |        2834.25 |          409.12 |        6026.25 |
+| PROMPT B | Grok 4.20 Reasoning |             12.39 |        2890.5  |          443.88 |        7315.25 |
+| PROMPT C | Gemini 2.5 Pro      |             20.05 |        2739.25 |          363.38 |        6131.62 |
+| PROMPT C | Grok 4.20 Reasoning |             14.19 |        2804.12 |          375.75 |        7387.5  |
+| PROMPT D | Gemini 2.5 Pro      |             21.37 |        2887.12 |          486.5  |        6351.75 |
+| PROMPT D | Grok 4.20 Reasoning |             14.15 |        2904.88 |          445.88 |        6991.38 |
 
 ## 6. Case-by-Case Breakdown (%)
 
 ### Model: Gemini 2.5 Pro
-| Prompt_Strategy   | Case_ID   | bleu_pct   | rouge_l_pct   |
-|:------------------|:----------|:-----------|:--------------|
-| PROMPT A          | ZT-001    | 0.00%      | 8.48%         |
-| PROMPT A          | ZT-002    | 7.89%      | 36.77%        |
-| PROMPT A          | ZT-003    | 6.45%      | 28.06%        |
-| PROMPT A          | ZT-004    | 4.88%      | 24.19%        |
-| PROMPT A          | ZT-005    | 4.24%      | 28.33%        |
-| PROMPT A          | ZT-006    | 16.40%     | 36.21%        |
-| PROMPT A          | ZT-007    | 13.70%     | 34.04%        |
-| PROMPT B          | ZT-001    | 9.83%      | 33.76%        |
-| PROMPT B          | ZT-002    | 16.47%     | 31.03%        |
-| PROMPT B          | ZT-003    | 8.67%      | 25.91%        |
-| PROMPT B          | ZT-004    | 3.01%      | 25.17%        |
-| PROMPT B          | ZT-005    | 12.50%     | 25.56%        |
-| PROMPT B          | ZT-006    | 10.23%     | 30.04%        |
-| PROMPT B          | ZT-007    | 14.04%     | 28.45%        |
-| PROMPT C          | ZT-001    | 2.89%      | 29.60%        |
-| PROMPT C          | ZT-002    | 10.36%     | 26.88%        |
-| PROMPT C          | ZT-003    | 12.78%     | 23.43%        |
-| PROMPT C          | ZT-004    | 2.71%      | 22.50%        |
-| PROMPT C          | ZT-005    | 4.76%      | 22.54%        |
-| PROMPT C          | ZT-006    | 4.06%      | 22.22%        |
-| PROMPT C          | ZT-007    | 1.78%      | 23.08%        |
-| PROMPT D          | ZT-001    | 8.43%      | 27.15%        |
-| PROMPT D          | ZT-002    | 7.71%      | 27.41%        |
-| PROMPT D          | ZT-003    | 0.99%      | 17.12%        |
-| PROMPT D          | ZT-004    | 9.04%      | 25.81%        |
-| PROMPT D          | ZT-005    | 2.91%      | 23.27%        |
-| PROMPT D          | ZT-006    | 6.73%      | 26.25%        |
-| PROMPT D          | ZT-007    | 12.44%     | 28.32%        |
+| Prompt_Strategy   | Case_ID   | bleu_pct   | rouge_l_pct   | bert_pct   |
+|:------------------|:----------|:-----------|:--------------|:-----------|
+| PROMPT A          | ZT-001    | 29.01%     | 53.43%        | 92.47%     |
+| PROMPT A          | ZT-002    | 25.98%     | 34.70%        | 90.56%     |
+| PROMPT A          | ZT-003    | 27.91%     | 47.77%        | 92.80%     |
+| PROMPT A          | ZT-004    | 25.20%     | 31.30%        | 90.04%     |
+| PROMPT A          | ZT-005    | 5.74%      | 26.62%        | 86.54%     |
+| PROMPT A          | ZT-006    | 19.17%     | 39.34%        | 89.61%     |
+| PROMPT A          | ZT-007    | 12.65%     | 31.39%        | 89.34%     |
+| PROMPT A          | ZT-008    | 22.93%     | 32.75%        | 89.09%     |
+| PROMPT B          | ZT-001    | 23.67%     | 50.74%        | 92.18%     |
+| PROMPT B          | ZT-002    | 24.67%     | 43.87%        | 91.31%     |
+| PROMPT B          | ZT-003    | 34.27%     | 49.39%        | 92.96%     |
+| PROMPT B          | ZT-004    | 15.02%     | 30.77%        | 88.98%     |
+| PROMPT B          | ZT-005    | 5.87%      | 24.09%        | 86.23%     |
+| PROMPT B          | ZT-006    | 7.12%      | 30.41%        | 87.79%     |
+| PROMPT B          | ZT-007    | 13.95%     | 29.41%        | 90.02%     |
+| PROMPT B          | ZT-008    | 21.79%     | 29.66%        | 88.26%     |
+| PROMPT C          | ZT-001    | 9.72%      | 34.62%        | 89.30%     |
+| PROMPT C          | ZT-002    | 25.67%     | 32.20%        | 91.01%     |
+| PROMPT C          | ZT-003    | 18.22%     | 37.76%        | 90.72%     |
+| PROMPT C          | ZT-004    | 27.01%     | 50.93%        | 91.42%     |
+| PROMPT C          | ZT-005    | 3.16%      | 21.70%        | 85.31%     |
+| PROMPT C          | ZT-006    | 6.02%      | 27.40%        | 85.97%     |
+| PROMPT C          | ZT-007    | 4.74%      | 27.27%        | 89.35%     |
+| PROMPT C          | ZT-008    | 15.01%     | 23.28%        | 87.59%     |
+| PROMPT D          | ZT-001    | 17.99%     | 36.48%        | 90.28%     |
+| PROMPT D          | ZT-002    | 20.80%     | 25.77%        | 89.20%     |
+| PROMPT D          | ZT-003    | 20.01%     | 33.22%        | 90.70%     |
+| PROMPT D          | ZT-004    | 18.87%     | 26.86%        | 88.11%     |
+| PROMPT D          | ZT-005    | 12.55%     | 26.11%        | 86.72%     |
+| PROMPT D          | ZT-006    | 15.06%     | 28.97%        | 88.90%     |
+| PROMPT D          | ZT-007    | 12.85%     | 24.79%        | 88.57%     |
+| PROMPT D          | ZT-008    | 12.93%     | 19.84%        | 87.18%     |
 
 ### Model: Grok 4.20 Reasoning
-| Prompt_Strategy   | Case_ID   | bleu_pct   | rouge_l_pct   |
-|:------------------|:----------|:-----------|:--------------|
-| PROMPT A          | ZT-001    | 19.04%     | 28.07%        |
-| PROMPT A          | ZT-002    | 22.04%     | 26.26%        |
-| PROMPT A          | ZT-003    | 17.44%     | 34.03%        |
-| PROMPT A          | ZT-004    | 28.04%     | 36.84%        |
-| PROMPT A          | ZT-005    | 14.86%     | 23.41%        |
-| PROMPT A          | ZT-006    | 13.91%     | 34.29%        |
-| PROMPT A          | ZT-007    | 10.05%     | 20.92%        |
-| PROMPT B          | ZT-001    | 16.44%     | 28.12%        |
-| PROMPT B          | ZT-002    | 23.40%     | 28.81%        |
-| PROMPT B          | ZT-003    | 7.73%      | 27.14%        |
-| PROMPT B          | ZT-004    | 18.10%     | 25.62%        |
-| PROMPT B          | ZT-005    | 13.99%     | 20.53%        |
-| PROMPT B          | ZT-006    | 6.16%      | 29.39%        |
-| PROMPT B          | ZT-007    | 4.97%      | 21.69%        |
-| PROMPT C          | ZT-001    | 5.26%      | 25.68%        |
-| PROMPT C          | ZT-002    | 9.93%      | 21.57%        |
-| PROMPT C          | ZT-003    | 6.05%      | 25.51%        |
-| PROMPT C          | ZT-004    | 11.43%     | 23.53%        |
-| PROMPT C          | ZT-005    | 10.78%     | 19.35%        |
-| PROMPT C          | ZT-006    | 9.47%      | 27.03%        |
-| PROMPT C          | ZT-007    | 0.97%      | 12.83%        |
-| PROMPT D          | ZT-001    | 9.62%      | 31.41%        |
-| PROMPT D          | ZT-002    | 9.01%      | 18.53%        |
-| PROMPT D          | ZT-003    | 9.84%      | 21.92%        |
-| PROMPT D          | ZT-004    | 16.07%     | 25.91%        |
-| PROMPT D          | ZT-005    | 11.29%     | 24.48%        |
-| PROMPT D          | ZT-006    | 12.66%     | 33.06%        |
-| PROMPT D          | ZT-007    | 2.00%      | 14.16%        |
+| Prompt_Strategy   | Case_ID   | bleu_pct   | rouge_l_pct   | bert_pct   |
+|:------------------|:----------|:-----------|:--------------|:-----------|
+| PROMPT A          | ZT-001    | 20.88%     | 39.71%        | 91.60%     |
+| PROMPT A          | ZT-002    | 32.03%     | 41.27%        | 92.27%     |
+| PROMPT A          | ZT-003    | 32.62%     | 45.08%        | 93.02%     |
+| PROMPT A          | ZT-004    | 39.84%     | 48.87%        | 93.15%     |
+| PROMPT A          | ZT-005    | 13.19%     | 24.83%        | 88.33%     |
+| PROMPT A          | ZT-006    | 13.28%     | 29.83%        | 88.40%     |
+| PROMPT A          | ZT-007    | 12.30%     | 19.51%        | 87.48%     |
+| PROMPT A          | ZT-008    | 25.27%     | 35.25%        | 89.51%     |
+| PROMPT B          | ZT-001    | 15.15%     | 40.00%        | 91.29%     |
+| PROMPT B          | ZT-002    | 22.01%     | 32.48%        | 91.14%     |
+| PROMPT B          | ZT-003    | 27.88%     | 39.66%        | 92.49%     |
+| PROMPT B          | ZT-004    | 31.96%     | 48.22%        | 91.53%     |
+| PROMPT B          | ZT-005    | 11.62%     | 21.22%        | 87.81%     |
+| PROMPT B          | ZT-006    | 5.72%      | 28.32%        | 88.44%     |
+| PROMPT B          | ZT-007    | 4.33%      | 20.90%        | 86.29%     |
+| PROMPT B          | ZT-008    | 13.34%     | 21.58%        | 88.83%     |
+| PROMPT C          | ZT-001    | 13.68%     | 31.84%        | 89.97%     |
+| PROMPT C          | ZT-002    | 16.03%     | 40.00%        | 91.27%     |
+| PROMPT C          | ZT-003    | 13.85%     | 37.84%        | 91.26%     |
+| PROMPT C          | ZT-004    | 25.15%     | 50.47%        | 91.30%     |
+| PROMPT C          | ZT-005    | 14.06%     | 21.60%        | 87.76%     |
+| PROMPT C          | ZT-006    | 6.36%      | 25.33%        | 87.66%     |
+| PROMPT C          | ZT-007    | 0.92%      | 16.08%        | 86.09%     |
+| PROMPT C          | ZT-008    | 14.64%     | 23.58%        | 88.24%     |
+| PROMPT D          | ZT-001    | 15.04%     | 39.70%        | 91.30%     |
+| PROMPT D          | ZT-002    | 20.41%     | 28.12%        | 90.48%     |
+| PROMPT D          | ZT-003    | 26.55%     | 38.17%        | 92.03%     |
+| PROMPT D          | ZT-004    | 32.62%     | 41.35%        | 92.14%     |
+| PROMPT D          | ZT-005    | 6.56%      | 19.16%        | 87.23%     |
+| PROMPT D          | ZT-006    | 1.73%      | 25.62%        | 87.47%     |
+| PROMPT D          | ZT-007    | 3.94%      | 15.73%        | 85.89%     |
+| PROMPT D          | ZT-008    | 8.64%      | 17.89%        | 87.14%     |

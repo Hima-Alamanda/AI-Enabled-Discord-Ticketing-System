@@ -29,11 +29,18 @@ DATASET_ZOHO    = os.path.join(CURRENT_DIR, "zoho_benchmark_dataset.json")
 JUDGE_SYSTEM_PROMPT = """You are an expert Technical QA Engineer specializing in AI Support systems.
 Evaluate the AI's response against the user message, context, ground truth, and any attachment info.
 
-Assign a score from 0 (Failure) to 5 (Excellent) for each metric:
+Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
+- 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
+- 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
+- 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
+- 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
+- 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
+
+Categories:
 - Correctness: Technically accurate and follows the 'Golden Answer'?
 - Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
 - Actionability: Clear, easy, numbered steps provided?
-- Format Adherence: Did it use the exact four headers in order: ### **Issue Analysis**, ### **Cause**, ### **Resolution Steps**, ### **Next Steps**?
+- Format Adherence: Did it follow the requested style (Natural conversational flow, NO bold section headers, correct bolding for buttons/systems)?
 - Ambiguity Handling: Did it correctly ask for info if the query was vague?
 - Multimodal Quality: (If image info is provided) How well did it interpret the OCR/UI state?
 - Escalation Logic: Correct decision (Solve vs. Create Ticket vs. Clarify)?
@@ -175,6 +182,23 @@ def run_evaluation(dataset_mode="generic"):
         return
         
     df = pd.DataFrame(all_results)
+    
+    # Rename columns to include scales (1-5), (1M-2M), etc.
+    df.rename(columns={
+        "correctness": "Correctness (1-5)",
+        "faithfulness": "Faithfulness (1-5)",
+        "actionability": "Actionability (1-5)",
+        "format_adherence": "Format Adherence (1-5)",
+        "ambiguity": "Ambiguity Handling (1-5)",
+        "multimodal": "Multimodal (1-5)",
+        "escalation": "Escalation Logic (1-5)",
+        "empathy": "Empathy & Tone (1-5)",
+        "input_tokens": "In_Tokens (1M-2M)",
+        "output_tokens": "Out_Tokens (30k-65k)",
+        "total_tokens": "Total_Tokens",
+        "latency": "Latency (s)"
+    }, inplace=True)
+    
     results_csv = os.path.join(CURRENT_DIR, "results/comparison_latest.csv")
     
     if not os.path.exists(os.path.join(CURRENT_DIR, "results")):
@@ -184,18 +208,18 @@ def run_evaluation(dataset_mode="generic"):
     
     # Final Table per Model
     summary = df.groupby('model').agg({
-        'correctness': 'mean',
-        'faithfulness': 'mean',
-        'actionability': 'mean',
-        'format_adherence': 'mean',
-        'ambiguity': 'mean',
-        'multimodal': 'mean',
-        'escalation': 'mean',
-        'empathy': 'mean',
-        'latency': 'mean',
-        'input_tokens': 'mean',
-        'output_tokens': 'mean',
-        'total_tokens': 'mean'
+        'Correctness (1-5)': 'mean',
+        'Faithfulness (1-5)': 'mean',
+        'Actionability (1-5)': 'mean',
+        'Format Adherence (1-5)': 'mean',
+        'Ambiguity Handling (1-5)': 'mean',
+        'Multimodal (1-5)': 'mean',
+        'Escalation Logic (1-5)': 'mean',
+        'Empathy & Tone (1-5)': 'mean',
+        'Latency (s)': 'mean',
+        'In_Tokens (1M-2M)': 'mean',
+        'Out_Tokens (30k-65k)': 'mean',
+        'Total_Tokens': 'mean'
     }).round(2)
     
     print("\n" + "="*60)
@@ -212,15 +236,15 @@ def run_evaluation(dataset_mode="generic"):
         rf.write(f"**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         rf.write(f"**Dataset:** {report_label} ({len(dataset)} test cases)\n\n")
 
-        rf.write("## 1. Quality Metrics (0-5 Scale)\n")
+        rf.write("## 1. Quality Metrics (1-5 Scale)\n")
         rf.write("Each model's response is scored by an independent AI Auditor based on this scale:\n\n")
         rf.write("| Score | Rating | Description |\n")
         rf.write("|:---:|:---|:---|\n")
-        rf.write("| **5** | **Excellent** | Fully correct, clear, well-structured, and follows all required rules |\n")
-        rf.write("| **4** | **Good** | Correct and helpful, with only minor issues in wording, tone, or formatting. |\n")
-        rf.write("| **3** | **Acceptable** | Mostly correct, but missing some details or clarity. |\n")
-        rf.write("| **1-2** | **Poor** | Contains important mistakes, unclear steps, or does not fully address the user’s issue. |\n")
-        rf.write("| **0** | **Failure** | Incorrect, misleading, made up facts, or failed to answer the query. |\n\n")
+        rf.write("| **5** | **Excellent** | Fully correct, clear, and follows all rules. |\n")
+        rf.write("| **4** | **Good** | Correct and helpful; minor wording/tone issues. |\n")
+        rf.write("| **3** | **Acceptable** | Mostly correct but missing some details. |\n")
+        rf.write("| **2** | **Poor** | Contains important mistakes or unclear steps. |\n")
+        rf.write("| **1** | **Failure** | Incorrect, misleading, or failed to answer. |\n\n")
 
         rf.write("### The 8 Quality Categories\n")
         rf.write("1. **Correctness:** Whether the bot gives the right answer based on past resolved tickets or known support information.\n")
@@ -233,7 +257,8 @@ def run_evaluation(dataset_mode="generic"):
         rf.write("8. **Empathy:** Whether the bot sounds professional, polite, and helpful.\n\n")
 
         rf.write("## 2. Quality Scores Summary\n\n")
-        quality_metrics = summary.drop(['latency', 'input_tokens', 'output_tokens', 'total_tokens'], axis=1)
+        drop_cols = ['Latency (s)', 'In_Tokens (1M-2M)', 'Out_Tokens (30k-65k)', 'Total_Tokens']
+        quality_metrics = summary.drop(drop_cols, axis=1)
         rf.write(quality_metrics.to_markdown() + "\n\n")
 
         rf.write("### Performance Metrics\n")
@@ -241,8 +266,8 @@ def run_evaluation(dataset_mode="generic"):
         rf.write("2. **Token Usage:** The amount of \"data\" processed by the model (input + output). This directly affects operational cost.\n")
         
         rf.write("## 2. Performance & Cost Metrics (Avg)\n\n")
-        perf_metrics = summary[['latency', 'input_tokens', 'output_tokens', 'total_tokens']]
-        perf_metrics.columns = ['Avg Latency (s)', 'Input Tokens', 'Output Tokens', 'Total Tokens']
+        perf_metrics = summary[['Latency (s)', 'In_Tokens (1M-2M)', 'Out_Tokens (30k-65k)', 'Total_Tokens']]
+        perf_metrics.columns = ['Avg Latency (s)', 'Input Tokens (1M-2M)', 'Output Tokens (30k-65k)', 'Total Tokens']
         rf.write(perf_metrics.to_markdown() + "\n\n")
         
         rf.write("## 3. Key Insights\n\n")
@@ -250,27 +275,29 @@ def run_evaluation(dataset_mode="generic"):
         # Simple Insight Generation
         for model in summary.index:
             m_data = summary.loc[model]
-            metrics_only = m_data.drop(['latency', 'input_tokens', 'output_tokens', 'total_tokens'])
+            drop_cols = ['Latency (s)', 'In_Tokens (1M-2M)', 'Out_Tokens (30k-65k)', 'Total_Tokens']
+            metrics_only = m_data.drop(drop_cols)
             strongest = metrics_only.idxmax()
             weakest = metrics_only.idxmin()
             rf.write(f"### {model}\n")
-            rf.write(f"- **Strength:** {strongest.capitalize()} ({m_data[strongest]})\n")
-            rf.write(f"- **Potential Area for Improvement:** {weakest.capitalize()} ({m_data[weakest]})\n")
-            rf.write(f"- **Avg Turnaround:** {m_data['latency']}s\n")
-            rf.write(f"- **Avg Tokens:** {int(m_data['total_tokens'])} (Input: {int(m_data['input_tokens'])}, Output: {int(m_data['output_tokens'])})\n\n")
+            rf.write(f"- **Strength:** {strongest} ({m_data[strongest]})\n")
+            rf.write(f"- **Potential Area for Improvement:** {weakest} ({m_data[weakest]})\n")
+            rf.write(f"- **Avg Turnaround:** {m_data['Latency (s)']}s\n")
+            rf.write(f"- **Avg Tokens:** {int(m_data['Total_Tokens'])} (In: {int(m_data['In_Tokens (1M-2M)'] or 0)}, Out: {int(m_data['Out_Tokens (30k-65k)'] or 0)})\n\n")
             
         rf.write("## 4. Case-by-Case Breakdown\n\n")
         for model in df['model'].unique():
             rf.write(f"### Model: {model}\n")
             temp_df = df[df['model'] == model]
             for _, r in temp_df.iterrows():
-                total_score = r['correctness'] + r['faithfulness'] + r['actionability'] + \
-                              r['format_adherence'] + r['ambiguity'] + r['multimodal'] + \
-                              r['escalation'] + r['empathy']
+                # Use new scaled column names
+                total_score = r['Correctness (1-5)'] + r['Faithfulness (1-5)'] + r['Actionability (1-5)'] + \
+                              r['Format Adherence (1-5)'] + r['Ambiguity Handling (1-5)'] + r['Multimodal (1-5)'] + \
+                              r['Escalation Logic (1-5)'] + r['Empathy & Tone (1-5)']
                 
                 rf.write(f"#### Case {r['case_id']}: {r['query'][:60]}...\n")
                 rf.write(f"- **Total Score:** {total_score}/40\n")
-                rf.write(f"- **Latency:** {r['latency']}s | **Tokens:** {int(r['total_tokens'])}\n")
+                rf.write(f"- **Latency:** {r['Latency (s)']}s | **Tokens:** {int(r['Total_Tokens'])}\n")
                 rf.write(f"- **Judge Reasoning:** *{r['reasoning']}*\n")
                 rf.write(f"\n**AI Response:**\n```\n{r['response']}\n```\n")
                 rf.write("---\n\n")

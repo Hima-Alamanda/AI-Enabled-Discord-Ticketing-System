@@ -4,9 +4,11 @@ import pandas as pd
 import os
 import sys
 import nltk
+import io
 from datetime import datetime
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from rouge_score import rouge_scorer
+from bert_score import score as bertscore
 
 # Setup Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -165,7 +167,14 @@ DATASET_FILE = os.path.join(CURRENT_DIR, "zoho_benchmark_dataset.json")
 JUDGE_SYSTEM_PROMPT = """You are an expert Technical QA Engineer specializing in AI Support systems.
 Evaluate the AI's response against the user message, context, and ground truth.
 
-Assign a score from 0 (Failure) to 5 (Excellent) for each metric:
+Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
+- 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
+- 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
+- 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
+- 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
+- 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
+
+Categories:
 - Correctness: Technically accurate and follows the 'Golden Answer'?
 - Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
 - Actionability: Clear, easy, numbered steps provided?
@@ -200,6 +209,15 @@ def calculate_rouge(ref, cand):
     scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=True)
     return round(scorer.score(ref, cand)['rougeL'].fmeasure, 4)
 
+def calculate_bertscore(ref, cand):
+    """Calculates semantic similarity using BERTScore (Precision, Recall, F1)."""
+    try:
+        P, R, F1 = bertscore([cand], [ref], lang="en", verbose=False)
+        return round(float(F1[0]), 4)
+    except Exception as e:
+        print(f"BERTScore Error: {e}")
+        return 0.0
+
 # --- 3. MASTER EVALUATION LOOP ---
 
 def run_suite():
@@ -230,11 +248,24 @@ def run_suite():
 
                 start_t = time.time()
                 try:
-                    # 1. Get AI Response with Prompt Override
+                    # 1. Handle Multimodal Input
+                    uploaded_file = None
+                    if case.get("image_path"):
+                        image_abs_path = os.path.join(PROJECT_ROOT, case["image_path"])
+                        if os.path.exists(image_abs_path):
+                            with open(image_abs_path, 'rb') as f:
+                                file_bytes = f.read()
+                            # Mock the uploaded file object for the engine
+                            uploaded_file = io.BytesIO(file_bytes)
+                            uploaded_file.name = os.path.basename(image_abs_path)
+                            print(f"(Image: {uploaded_file.name})...", end="")
+
+                    # 2. Get AI Response with Prompt Override
                     resp_data = chatbot_engine.get_chatbot_response(
                         user_message=query,
                         history=[],
                         user_context={"name": "Tester", "user_id": "eval_001", "email": "test@pcbapps.com"},
+                        uploaded_file=uploaded_file,
                         system_prompt_override=prompt_content
                     )
                     duration_ms = round((time.time() - start_t) * 1000, 0)
@@ -249,6 +280,7 @@ def run_suite():
                     # 3. Calculate Math Metrics
                     bleu = calculate_bleu(case["ground_truth"], content)
                     rouge = calculate_rouge(case["ground_truth"], content)
+                    bert_f1 = calculate_bertscore(case["ground_truth"], content)
 
                     # 4. Usage Metrics
                     usage = oci_genai.get_total_usage()
@@ -265,6 +297,7 @@ def run_suite():
                         "Total_Tokens": usage.get("total_tokens", 0),
                         "BLEU_Score": bleu,
                         "ROUGE_L": rouge,
+                        "BERTScore": bert_f1,
                         "Correctness": scores.get("correctness", 0) if scores else 0,
                         "Faithfulness": scores.get("faithfulness", 0) if scores else 0,
                         "Actionability": scores.get("actionability", 0) if scores else 0,
@@ -285,6 +318,25 @@ def run_suite():
 
     # Output Results
     df = pd.DataFrame(all_results)
+    
+    # Rename columns to include scales (1-1), (1-5), etc.
+    df.rename(columns={
+        "Latency_MS": "Latency (ms)",
+        "In_Tokens": "In_Tokens (1M-2M)",
+        "Out_Tokens": "Out_Tokens (30k-65k)",
+        "BLEU_Score": "BLEU Score (0-1)",
+        "ROUGE_L": "ROUGE-L (0-1)",
+        "BERTScore": "BERTScore (0-1)",
+        "Correctness": "Correctness (1-5)",
+        "Faithfulness": "Faithfulness (1-5)",
+        "Actionability": "Actionability (1-5)",
+        "Format_Adherence": "Format Adherence (1-5)",
+        "Ambiguity": "Ambiguity Handling (1-5)",
+        "Multimodal": "Multimodal (1-5)",
+        "Escalation": "Escalation Logic (1-5)",
+        "Empathy": "Empathy & Tone (1-5)"
+    }, inplace=True)
+    
     results_path = os.path.join(CURRENT_DIR, "results/prompt_comparison.csv")
     df.to_csv(results_path, index=False)
     print(f"\n SUCCESS: CSV Report saved to {results_path}")
@@ -292,34 +344,35 @@ def run_suite():
     # --- 4. GENERATE MARKDOWN REPORT FOR MANAGEMENT ---
     summary_md_path = os.path.join(CURRENT_DIR, "results/PROMPT_REPORT.md")
     
-    # Calculate Quality Stats
+    # Calculate Quality Stats (using new names)
     quality_stats = df.groupby(['Prompt_Strategy', 'Model']).agg({
-        'Correctness': 'mean',
-        'Faithfulness': 'mean',
-        'Actionability': 'mean',
-        'Format_Adherence': 'mean',
-        'Ambiguity': 'mean',
-        'Multimodal': 'mean',
-        'Escalation': 'mean',
-        'Empathy': 'mean'
+        'Correctness (1-5)': 'mean',
+        'Faithfulness (1-5)': 'mean',
+        'Actionability (1-5)': 'mean',
+        'Format Adherence (1-5)': 'mean',
+        'Ambiguity Handling (1-5)': 'mean',
+        'Multimodal (1-5)': 'mean',
+        'Escalation Logic (1-5)': 'mean',
+        'Empathy & Tone (1-5)': 'mean'
     }).reset_index().round(2)
 
     # Calculate Performance Stats
     perf_stats = df.groupby(['Prompt_Strategy', 'Model']).agg({
-        'Latency_MS': lambda x: round(x.mean() / 1000, 2),
-        'In_Tokens': 'mean',
-        'Out_Tokens': 'mean',
+        'Latency (ms)': lambda x: round(x.mean() / 1000, 2),
+        'In_Tokens (1M-2M)': 'mean',
+        'Out_Tokens (30k-65k)': 'mean',
         'Total_Tokens': 'mean'
     }).reset_index()
     perf_stats.columns = ['Prompt', 'Model', 'Avg Latency (s)', 'Input Tokens', 'Output Tokens', 'Total Tokens']
 
     # Calculate Math Accuracy Stats (as percentages)
     math_stats = df.groupby(['Prompt_Strategy', 'Model']).agg({
-        'BLEU_Score': lambda x: f"{x.mean()*100:.2f}%",
-        'ROUGE_L': lambda x: f"{x.mean()*100:.2f}%",
-        'Latency_MS': lambda x: round(x.mean() / 1000, 4)
+        'BLEU Score (0-1)': lambda x: f"{x.mean()*100:.2f}%",
+        'ROUGE-L (0-1)': lambda x: f"{x.mean()*100:.2f}%",
+        'BERTScore (0-1)': lambda x: f"{x.mean()*100:.2f}%",
+        'Latency (ms)': lambda x: round(x.mean() / 1000, 4)
     }).reset_index()
-    math_stats.columns = ['Prompt', 'Model', 'bleu_score', 'rouge_l_score', 'latency']
+    math_stats.columns = ['Prompt', 'Model', 'bleu_score', 'rouge_l_score', 'bert_score', 'latency']
 
     with open(summary_md_path, 'w') as f:
         f.write("# Evaluation Report\n")
@@ -329,7 +382,7 @@ def run_suite():
         f.write("We have tested 4 distinct technical prompt strategies across Gemini and Grok models using 7 benchmark cases from Zoho.\n")
         
         f.write("\n### PROMPT Definitions\n")
-        f.write("- **PROMPT A: Production:** The current live system prompt used in the AI engine bot.\n")
+        f.write("- **PROMPT A::** The current live system prompt used in the AI engine bot.\n")
         f.write("- **PROMPT B: Balanced Expert:** Optimized for a polished, professional, and empathetic helpdesk experience.\n")
         f.write("- **PROMPT C: High-Efficiency:** Focused on pure technical resolution speed by removing all filler words.\n")
         f.write("- **PROMPT D: Cautious Diagnostic:** Prioritizes thorough investigation and root-cause mapping before suggesting a fix.\n")
@@ -370,10 +423,12 @@ def run_suite():
 
         f.write("\n\n## 3. Mathematical Accuracy (Alignment)\n")
         f.write("*   **BLEU Score (Precision):** Measures wording similarity to the expected support answer. Scale: 0-100% (Higher is closer alignment).\n")
-        f.write("*   **ROUGE-L Score (Recall):** Measures coverage of expected important information. Scale: 0-100% (Higher is better coverage).\n\n")
+        f.write("*   **ROUGE-L Score (Recall):** Measures coverage of expected important information. Scale: 0-100% (Higher is better coverage).\n")
+        f.write("*   **BERTScore:** Measures semantic similarity between the chatbot response and the expected answer using embedding-based matching. **This is one of the strongest metrics for judging response quality because it focuses on meaning, not just exact word overlap.** Scale: 0-100% (higher is better).\n\n")
 
         f.write("### Model Comparison (Avg %)\n")
         f.write(math_stats.to_markdown(index=False))
+
 
         f.write("\n## 4. Model Capacity (Context Window)\n")
         f.write("| Feature | xAI Grok 4.20 (Reasoning) | Google Gemini 2.5 Pro |\n")
@@ -392,17 +447,11 @@ def run_suite():
         for model in df['Model'].unique():
             f.write(f"\n### Model: {model}\n")
             model_df = df[df['Model'] == model].copy()
-            model_df['bleu_pct'] = model_df['BLEU_Score'].apply(lambda x: f"{x*100:.2f}%")
-            model_df['rouge_l_pct'] = model_df['ROUGE_L'].apply(lambda x: f"{x*100:.2f}%")
-            f.write(model_df[['Prompt_Strategy', 'Case_ID', 'bleu_pct', 'rouge_l_pct']].to_markdown(index=False))
+            model_df['bleu_pct'] = model_df['BLEU Score (0-1)'].apply(lambda x: f"{x*100:.2f}%")
+            model_df['rouge_l_pct'] = model_df['ROUGE-L (0-1)'].apply(lambda x: f"{x*100:.2f}%")
+            model_df['bert_pct'] = model_df['BERTScore (0-1)'].apply(lambda x: f"{x*100:.2f}%")
+            f.write(model_df[['Prompt_Strategy', 'Case_ID', 'bleu_pct', 'rouge_l_pct', 'bert_pct']].to_markdown(index=False))
             f.write("\n")
-
-    # Add Legend to CSV as technical notes
-    with open(results_path, 'a') as csv_f:
-
-        csv_f.write("Quality Scores: Scaled 0 to 5 (5 = Excellent; 0 = Failure)\n")
-        csv_f.write("BLEU/ROUGE-L: Mathematical alignment (0.0 to 1.0; 1.0 = Perfect Word Match)\n")
-        csv_f.write("Tokens: Volume of data units. Capacity: Gemini Pro (1M); Grok 4.20 (2M)\n")
 
     print(f"Executive summary saved to {summary_md_path}")
 

@@ -22,3 +22,9 @@ instantclient/
 evaluations/results/*
 !evaluations/results/PROMPT_REPORT.md
 !evaluations/results/prompt_comparison.csv
+
+scripts/
+
+!evaluations/results/EXECUTIVE_PERFORMANCE_REPORT_V7_final.xlsx
+
+evaluations/generate_excel_report.py

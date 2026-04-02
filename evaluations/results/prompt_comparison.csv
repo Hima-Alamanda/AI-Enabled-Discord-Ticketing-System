@@ -1,570 +1,689 @@
-Prompt_Strategy,Model,Case_ID,Query,Latency_MS,In_Tokens,Out_Tokens,Total_Tokens,BLEU_Score,ROUGE_L,Correctness,Faithfulness,Actionability,Format_Adherence,Ambiguity,Multimodal,Escalation,Empathy,Judge_Reasoning,AI_Response,KB_Context_Used
-PROMPT A,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,40553.0,1457,331,5238,0.0,0.0848,0,1,0,5,2,0,0,3,"The AI failed to provide a solution when the query was specific enough for one, as demonstrated by the ground truth. Instead, it asked a clarifying question that introduced system-specific terminology (JDE, R09801) not present in the user's query or the provided KB sources, indicating a potential hallucination or ungrounded assumption. The expected action was to provide a solution, not to clarify.","Is this error occurring during the JDE batch post process (R09801), or is it with a specific financial report?","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT A,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,18505.0,2865,413,5866,0.0789,0.3677,2,2,1,4,5,5,1,4,"The AI correctly identifies the problem and its cause. However, it deviates significantly from the ground truth's expected action. The ground truth states, 'I have initiated a request to the System Administrator,' implying a proactive solution. The AI, instead, asks, 'Would you like me to proceed with creating that ticket for you?' This changes the expected action from 'PROVIDE_SOLUTION' to 'CLARIFY' or 'CREATE_TICKET' (pending user confirmation), which is less proactive and not what the ground truth specifies. Consequently, it does not provide the actionable steps for the user as outlined in the ground truth. The format is mostly good, but it misses the bolding of department names.","Hi Tester,
+Prompt_Strategy,Model,Case_ID,Query,Latency (ms),In_Tokens (1M-2M),Out_Tokens (30k-65k),Total_Tokens,BLEU Score (0-1),ROUGE-L (0-1),BERTScore (0-1),Correctness (1-5),Faithfulness (1-5),Actionability (1-5),Format Adherence (1-5),Ambiguity Handling (1-5),Multimodal (1-5),Escalation Logic (1-5),Empathy & Tone (1-5),Judge_Reasoning,AI_Response,KB_Context_Used
+PROMPT A,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,27576.0,3135,483,6222,0.2901,0.5343,0.9247,4,5,3,4,5,5,5,4,"The AI's response is mostly correct and faithful to the ground truth, providing a good explanation and initial steps. However, it loses some actionability points because step 4 is less precise than the ground truth. The ground truth explicitly states to 'Verify that the total Debits and Credits are equal' and then 'click Repost,' whereas the AI says 'Verify that the Difference Amount for the batch is now zero, and then you can proceed with posting,' which is slightly vague on the exact action to take. Additionally, the bolding in step 3 differs slightly from the ground truth, and the greeting 'Hi Tester' is a minor stylistic deviation.","Hi Tester,
 
-I understand you're getting an ""access denied"" error when trying to view tickets for the DC33 and JFK departments in Zoho. This typically happens when a user's profile permissions have not yet been configured to view tickets from those specific groups.
+I understand you're encountering an error when posting your Journal Entry batches for month-end reporting. This issue typically arises when a batch contains unposted or unbalanced entries, which prevents the system from processing it correctly and results in a non-zero difference amount.
 
-Resolving this requires an adjustment to your account permissions on the backend. I will need to create a ticket for our Zoho administration team to grant your profile the necessary access to the DC33 and JFK ticket queues.
+To resolve this, please follow these steps:
 
-Would you like me to proceed with creating that ticket for you?","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT A,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,24873.0,3101,447,6236,0.0645,0.2806,2,2,1,5,5,5,1,4,"The AI's response deviates significantly from the ground truth. The ground truth provides actionable steps for the user to resolve the issue themselves. The AI, however, states that it needs to handle the issue and asks for member IDs to create a ticket, which is an immediate escalation rather than providing a solution for the user. This impacts correctness, faithfulness, actionability, and escalation logic. The explanation for the issue is also slightly different from the ground truth's explanation. The format and tone are good.","Hi Tester,
+1.  Navigate to the **Batch Review** screen in the application.
+2.  Locate the specific batch that has the **Error** status.
+3.  Within that batch, identify and **Delete** any unposted or erroneous lines.
+4.  Verify that the **Difference Amount** for the batch is now zero, and then you can proceed with posting.
 
-I understand you're seeing retirees who are under the HMO plan still showing as active on the eligibility file. This issue typically occurs when a member's termination from a plan doesn't correctly synchronize with the system that generates the eligibility file, often requiring a manual data correction on the backend.
+If the batch still fails to post after clearing the erroneous lines, please let me know, and I can investigate further for any potential record locks.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT A,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,19575.0,2986,446,6189,0.2598,0.347,0.9056,3,4,2,5,5,5,2,5,"The AI correctly identifies the cause of the 'access denied' error and the need for administrator intervention. However, it deviates from the ground truth in two key areas: 
+1. **Action Initiation**: The ground truth states, 'I have initiated a request...', implying immediate action. The AI, however, asks for confirmation ('Please confirm, and I will create the ticket...') before taking action, which delays the resolution and changes the expected action from 'PROVIDE_SOLUTION' to more of a 'CLARIFY' or 'GATHER_INFO' state.
+2. **Completeness of Solution**: The AI's response omits the user-side steps provided in the ground truth (log out, clear cache, log back in to verify). This makes the solution less actionable and complete.","Hi Tester,
 
-Since this requires direct intervention in the system's data, I will need to handle this for you. To proceed, I need the specific details of the members who are appearing incorrectly.
+I understand you're unable to access tickets in the **DC33** and **JFK** departments within **Zoho Desk**. This ""Access Denied"" error typically occurs because your user profile does not have the specific **Department-Level visibility** required for these restricted service queues.
 
-1.  Please provide the **Pension Numbers** or **Member IDs** for the affected retirees.
-2.  I will then create a ticket to have our data team manually update their status and ensure they are correctly reflected as terminated from the HMO plan in the next eligibility file generation.
+This requires an administrator to update your account permissions. I will need to submit a request to our System Administration team to grant you the necessary access to the **DC33** and **JFK** departments.
 
-Let me know the member details, and I will get the process started for you right away.",Sources: ['zoho_archive']
-PROMPT A,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,25690.0,3083,380,6312,0.0488,0.2419,0,0,0,4,5,0,0,4,"The AI completely ignored the provided ground truth which offered a user-level solution involving UDC Maintenance. Instead, it incorrectly stated the behavior is 'by design' and immediately escalated to a backend team, which contradicts the expected action of 'PROVIDE_SOLUTION'. This results in zero correctness, faithfulness, and actionability. The escalation logic is also incorrect as the ground truth provided a solution first, with conditional escalation. The format and tone are acceptable, but the content is fundamentally wrong.","Hi Tester,
+Please confirm, and I will create the ticket to get this process started for you.","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT A,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,16672.0,3144,434,5922,0.2791,0.4777,0.928,4,5,5,4,5,5,5,5,"The AI's response is largely correct and faithful to the ground truth, providing clear, actionable steps. The explanation for the discrepancy is accurate. The tone is empathetic and professional. Minor deductions are for format adherence (missing bolding for 'Eligibility File' in step 5, though it's bolded in the follow-up) and correctness/actionability (the follow-up escalation is slightly less specific than the ground truth's request for 'specific Member IDs', but still acceptable).","Hi Tester,
 
-I understand you're unable to save a blank value in an address book field. This behavior is typically by design, as certain fields are configured as 'required' to maintain data integrity and prevent incomplete records from being saved in the system.
+I understand you're seeing retirees on the HMO plan incorrectly listed as active. This issue typically occurs when there are missing retirement termination dates or a synchronization delay between the HR records and the insurance eligibility files.
 
-Since changing this validation rule requires a backend configuration adjustment, I will need to escalate this to our Application Development team. They can review the business requirements for that specific field and determine if allowing blank entries is appropriate.
+To correct this, you can manually update the retiree's status in the system:
 
-I will create a ticket and escalate this for you now, and you will receive a notification with the ticket number shortly.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT A,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,18895.0,2895,380,5390,0.0424,0.2833,2,3,2,5,5,5,2,5,"The AI correctly identifies that the process is handled by the Finance Systems team, which is mentioned in the ground truth. However, it fails to provide the actual process steps as detailed in the ground truth, which was explicitly requested by the user ('What is the process and can you walk me through it?'). Instead of providing the solution (steps) and then offering further assistance/escalation as the ground truth does, the AI immediately escalates by offering to create a ticket, thus not fully addressing the user's initial request for the process itself. This impacts correctness and actionability.","Hi Tester,
+1.  Open the **Benefit Administration** system.
+2.  Locate the specific retiree's record.
+3.  Manually adjust the status field from **Active** to **Retired**.
+4.  Confirm the **HMO Plan** line includes the correct retirement effective date.
+5.  Generate a new **Eligibility File** to apply the changes.
 
-I understand you're asking about the process for the Daiwa fiscal year-end closing. This is a critical and sensitive financial operation that is managed directly by our specialized Finance Systems team to ensure data integrity and compliance.
+If the eligibility file still shows them as active after these steps, please let me know and I can investigate further.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT A,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,26342.0,3333,458,7661,0.252,0.313,0.9004,2,2,1,4,3,5,1,5,"The AI correctly identifies the root cause of the issue (UDC validation). However, it deviates significantly from the Ground Truth's prescribed solution. The Ground Truth provides actionable, numbered steps for the user to attempt a fix, and only asks for the field name if those steps fail. The AI, instead, immediately offers to fix it on the backend and asks for the field name, providing no actionable steps for the user. This makes it unfaithful to the solution flow, lacking in actionability, and incorrect in its escalation logic (it should have provided the solution steps first, as per `PROVIDE_SOLUTION`). The format and tone are good, and asking for the field name isn't inherently wrong, but it's premature in this context.","Hi Tester,
 
-Due to the specific permissions and system access required, this process must be handled by the designated application support group. I can facilitate this by formally routing your request to the correct team.
+I understand you're unable to save a blank value in a field within the Address Book. This issue typically happens when a **UDC (User Defined Code)** validation rule is configured for that specific field, marking it as mandatory and preventing the system from accepting an empty entry.
 
-Would you like me to create a service request ticket and assign it to the Finance Systems team to get this process started for you?","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT A,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,22416.0,3169,391,6602,0.164,0.3621,2,1,3,4,5,5,5,5,"The AI correctly identified the need to contact a data management team but hallucinated specific contact names and email addresses not present in the provided KB/Ground Truth. It also missed crucial details for the request (e.g., 'unique Member ID', 'Effective Removal Date') and the follow-up (confirmation receipt, SLA) mentioned in the ground truth, making the solution less complete and accurate.","Hi Tester,
+I can adjust this setting on the backend for you. To proceed, could you please provide the name of the specific field that you are trying to leave blank? Once I have that information, I will disable the mandatory requirement for that field in the **UDC Maintenance** module.
 
-I understand you need to remove a member from the eligibility file. These types of data modifications are handled directly by our data management team to ensure the integrity of the records and proper processing on the backend.
+After I confirm the change is complete, you will be able to refresh the **Address Book** and save the record successfully.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT A,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19650.0,3023,378,5947,0.0574,0.2662,0.8654,1,1,1,2,5,5,1,3,"The AI incorrectly states that it cannot provide the process due to security protocols and that general IT support cannot guide the user. The ground truth explicitly provides the multi-step process for the Daiwa fiscal year-end close. The AI fails to provide the requested solution and instead opts to create a ticket, which is an incorrect escalation decision. While the tone is polite, the refusal to provide available information makes the response unhelpful.","Hi Tester,
+
+I understand you're looking for the process for the Daiwa fiscal year-end close. This is a critical and sensitive financial operation that is managed directly by a specialized team to ensure data integrity and compliance during this important period for the business.
+
+Due to the security protocols surrounding financial closing procedures, this isn't a process that general IT support can guide you through directly. I will need to route your request to the dedicated **Daiwa Application Support** team, who are responsible for coordinating and executing the year-end close. They will reach out to you with the official procedure and assist you.
+
+Would you like me to create and route this ticket to them on your behalf?","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT A,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,28199.0,3245,424,6723,0.1917,0.3934,0.8961,2,1,2,3,5,5,5,5,"The AI hallucinates specific names for the Data Management team ('Ashok Chinthala' and 'Mohanty Debiprasad') which are not present in the ground truth. It also omits crucial information such as the 'Effective Removal Date' and the expectation of a confirmation receipt within 24 hours. While the tone is good and it attempts to provide steps, the factual inaccuracies and omissions significantly reduce its correctness and faithfulness. The bolding is also inconsistent with the ground truth's emphasis on key terms.","Hi Tester,
+
+I understand you need to remove a member from an eligibility file. This process is handled by our data management team to ensure data integrity and maintain a clear audit trail for all changes made to these sensitive files.
 
 To process this request, please follow these steps:
 
-1.  Draft an email that includes the member's details and a clear statement requesting their removal from the eligibility file.
-2.  Send this email to **Ashok Chinthala** (`achinthala@pcbapps.com`) and **Mohanty Debiprasad** (`mdebiprasad@pcbapps.com`), who will handle the request.
+1.  Compose an email detailing the removal request.
+2.  In the body of the email, please include the member's full name and any unique identifiers (e.g., Member ID) to ensure we target the correct record.
+3.  Send this email to **Ashok Chinthala** and **Mohanty Debiprasad**, who will process the removal.
 
-Please let me know if you need assistance with any other procedures.",Sources: ['zoho_archive']
-PROMPT A,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,20779.0,2912,407,5847,0.137,0.3404,5,5,4,4,5,5,5,5,"The AI correctly identified the ambiguity of the query and asked for clarification. The questions asked are relevant and help narrow down the issue, aligning with the intent of the ground truth. The format is natural and uses numbered steps. The AI's questions are slightly different from the ground truth's but achieve the same goal. The ground truth used bolding for keywords which the AI did not, a minor format deviation. Actionability is good but could be slightly improved by matching the ground truth's specific bolding for keywords.","Hi Tester,
+If you have any other questions about this process, please let me know.",Sources: ['zoho_archive']
+PROMPT A,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,18640.0,2957,382,5692,0.1265,0.3139,0.8934,4,5,5,4,5,5,5,5,"The AI correctly identified the need to clarify the vague query. It asked relevant questions (application, error message, action performed) that align well with the intent of the ground truth, even if the exact wording of the questions differed slightly. It also correctly suggested a screenshot. The response was actionable with numbered steps and maintained a professional, empathetic tone. The only minor deviation was the lack of bolding for key terms as seen in the ground truth's style.","Hi Tester,
 
-I'm sorry to hear you're running into an issue with the system. To help me investigate and resolve this for you, I'll need a bit more information to understand which component is failing and what the specific symptoms are.
+I understand you're running into a problem with one of our systems. To help me diagnose and resolve this for you efficiently, I'll need a little more specific information about the issue you are experiencing.
 
-To help me pinpoint the exact cause, could you please provide the following details:
+Could you please provide me with the following details?
 
-1.  Which application or program were you using when the problem occurred?
-2.  What was the specific task you were trying to perform?
-3.  Are there any error messages or codes appearing on your screen? A screenshot would be very helpful.
+1.  Which application, server, or system are you having trouble with?
+2.  What is the specific error message you are seeing? A screenshot would be very helpful.
+3.  What action were you trying to perform when the error occurred?
 
-Once I have these details, I can provide you with the correct solution or escalate if necessary.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT A,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,10232.0,3237,404,7725,0.1904,0.2807,2,2,3,5,5,5,5,5,"The AI's response misses a crucial step from the ground truth (deleting unposted entries) and introduces system-specific terms (JDE, Work Center) not present in the ground truth or user query, impacting correctness and faithfulness. While the format, tone, and escalation logic are good, the core solution's accuracy and grounding are weak compared to the golden answer.","Hi Tester,
+Once I have these details, I can provide you with the correct steps to fix the issue.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT A,Gemini 2.5 Pro,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,9487.0,3248,418,5205,0.2293,0.3275,0.8909,2,1,5,5,5,5,3,5,"The AI correctly identified the error code from the (implied) screenshot and provided clear, well-formatted steps. However, the AI's proposed solution (clearing credentials) and its explanation of the cause for error 0x80040115 directly contradict the ground truth's diagnosis (corrupted OST file) and solution (renaming OST file). This is a major faithfulness issue, as the AI hallucinated a different solution not present in the provided ground truth for this specific error.","Hi Tester,
 
-This error during end-of-month reporting usually occurs in **JDE** when the Journal Entry batch has an imbalance between debits and credits, causing the batch to fail with an Error status and a visible difference amount.
+I understand you're seeing a connection error when trying to open Outlook. This error, `0x80040115`, typically indicates that your stored login credentials within Windows have become corrupted or are out of sync, which prevents Outlook from establishing a secure connection to our servers.
 
-To resolve this, please follow these steps:
+To resolve this, we'll need to clear the cached credentials from your system by following these steps:
 
-1. Log into **JDE** and open the **Work Center**.
-2. Locate your batch and review the full error message for details on the exact difference.
-3. Navigate to **Batch Review** (or **Journal Entries - P0911**), open the batch, and check each line to identify where the amounts are unbalanced.
-4. Correct the debit or credit entries so they match exactly, save the changes, then select **Post** to reprocess the batch.
+1.  Close **Outlook** and any other **Office** applications (like Word or Excel) you have open.
+2.  Open the **Control Panel** on your computer and navigate to the **Credential Manager**.
+3.  Select **Windows Credentials** and locate all entries that begin with **MicrosoftOffice16**.
+4.  Click on each of these entries and select **Remove**.
+5.  Once all have been removed, restart **Outlook**. You will be prompted to sign in again, which will create a fresh connection.
 
-If the batch still shows an error after balancing, please reply with the exact error text or a screenshot so I can assist further.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT A,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,10074.0,3043,483,7479,0.2204,0.2626,2,1,2,5,5,5,1,4,"The AI correctly identifies the root cause (missing permissions). However, its proposed solution steps deviate significantly from the ground truth. The ground truth states that the AI *initiates* a request to the System Administrator to update permissions. The AI's response instead provides additional troubleshooting steps for the user to perform, and only *then* offers to escalate. This is not faithful to the prescribed solution and defers the expected action of providing a direct solution.","Hi Tester,
+If the connection error persists after completing these steps, please let me know, and I can investigate further.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT A,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,11516.0,3231,470,6877,0.2088,0.3971,0.916,4,5,5,4,5,5,5,5,"The AI's response is highly accurate and provides clear, actionable steps that align very closely with the ground truth. It correctly identifies the problem and offers a solution. The only minor deviations are in the specific bolding choices (missing 'Unposted Entries' and 'Repost' equivalent, and adding bolding to 'Delete' and 'Difference Amount' which weren't explicitly bolded in the GT steps) and a slightly less explicit mention of 'Debits and Credits' in step 4, though 'Confirm the Difference Amount is now zero' conveys the same intent. These are minor formatting and wording differences that do not impact correctness or actionability.","Hi Tester,
 
-It looks like your Zoho account is missing the required permissions for the DC33 and JFK client groups, which is a common cause of the ""access denied"" error when trying to view their tickets. This usually occurs after role changes, new client setups, or when group assignments aren't fully synced to your profile.
-
-To resolve this, please try the following:
-
-1. Log out of **Zoho Desk** completely, then clear your browser cache and cookies for zoho.com.
-2. Open an incognito window and log back in using **test@pcbapps.com**.
-3. Navigate to the **Tickets** module and use the client filter to search specifically for **DC33** or **JFK** to test access.
-4. If you still see the error, go to your **Zoho profile icon** > **My Profile** and note any visible department or group assignments.
-
-If the access issue continues after these steps, let me know the exact error message you're seeing and I'll escalate this to our Zoho admin team to update your permissions.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT A,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,13875.0,3068,428,7807,0.1744,0.3403,3,2,5,5,5,0,5,5,"The AI provides a plausible solution with clear steps and good tone. However, it deviates from the ground truth's specific system names ('Eligibility Management Console' vs 'Benefit Administration system') and the exact status change ('Terminated' vs 'Retired'). This impacts correctness and faithfulness, as the ground truth represents the 'golden answer' for the correct procedure.","Hi Tester,
-
-This issue with retirees under the **HMO** plan still appearing as active on the eligibility file typically occurs when the termination or end-date logic for those records hasn't been applied correctly during the eligibility update cycle, often due to a missing retiree-specific flag or overlapping plan codes.
+This error during end of month reporting occurs when a Journal Entry batch contains unbalanced or unposted lines, causing the **Error** status and a non-zero difference amount. It can also stem from record locks held by other users during the posting process.
 
 To resolve this, please follow these steps:
 
-1. Log into the **Eligibility Management Console**.
-2. Go to **Member Search** and locate the affected retirees using their **P/N** or member ID.
-3. Open the **Coverage Details** tab, set the **HMO Plan End Date** to the correct termination date, and change the **Status** to **Terminated**.
-4. Click **Save** and then run **Generate Eligibility File** to create a fresh export.
-5. Review the output file to confirm the retirees no longer show as active.
+1. Navigate to the **Batch Review** screen.
+2. Locate the specific batch showing the **Error** status.
+3. Open the batch and identify any unposted entries or erroneous lines, then **Delete** them.
+4. Confirm the **Difference Amount** is now zero, then attempt to post the batch again.
 
-If the retirees continue to appear after these updates, please share a couple of specific P/N examples and I can review the records directly with you.",Sources: ['zoho_archive']
-PROMPT A,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,15662.0,3186,439,8334,0.2804,0.3684,2,2,3,5,5,5,5,5,"The AI's primary solution (entering a space character) is not present in the ground truth and deviates significantly from the recommended fix which involves UDC maintenance and disabling mandatory fields. While the AI mentions UDC maintenance as a fallback, it doesn't fully align with the ground truth's direct approach to resolving the issue. This impacts correctness and faithfulness.","Hi Tester,
+If the batch still fails to post after these steps, please let me know the exact batch number and any additional error details so I can assist further.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT A,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,10594.0,3136,488,7226,0.3203,0.4127,0.9227,2,2,3,5,5,5,2,4,"The AI correctly identifies the problem as a permissions issue. However, it deviates significantly from the ground truth's resolution. The ground truth states that an admin request has *already been initiated* to update the user's account visibility. The AI, instead, asks the user to perform basic troubleshooting steps (log out, clear cache) first, and *then* offers to initiate the admin request as a conditional follow-up. This makes the AI's solution less direct and less effective than the ground truth, requiring unnecessary steps from the user before the actual resolution is pursued. The core fix (admin request) is presented as a secondary, conditional step rather than the primary action.","Hi Tester,
 
-I understand the **Address Book** is blocking you from saving a blank value in a field. This is usually caused by a UDC (User Defined Code) validation rule or a required-field setting that doesn't recognize an empty entry as valid, which is common in the address book module to protect data consistency.
+This ""Access Denied"" error when trying to view **DC33** or **JFK** tickets in **Zoho Desk** is a common permissions issue. Your account role currently lacks the specialized department-level visibility settings required for these restricted service queues.
 
 To resolve this, please follow these steps:
 
-1. Open the **Address Book** record you're editing.
-2. In the affected field, enter a single space character (press the spacebar once) rather than leaving it completely empty.
-3. Click **Save** to test if the system accepts the value.
-4. If that doesn't work, go to **Tools** > **UDC Maintenance**, locate the code table tied to that field, and add a blank or space entry if you have access.
+1. Log out of **Zoho Desk** completely.
+2. Clear your browser cache and cookies (in Chrome: **Settings** > **Privacy and security** > **Clear browsing data**).
+3. Log back into **Zoho Desk** and test access to the tickets again.
 
-If these steps don't allow the blank value, let me know the exact field name and any error message you see so I can check the configuration.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT A,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,16721.0,3138,462,8802,0.1486,0.2341,0,0,3,4,5,5,4,5,"The AI's response provides steps that are completely different from the ground truth's 'Golden Answer' for closing the Daiwa fiscal year-end. The ground truth outlines a process focused on accounting principles (journal entries, trial balance, financial statements), while the AI provides system-specific steps (log in, navigate, run reports, click button) that are not supported by the provided KB or ground truth. Additionally, the AI hallucinates information about 'sensitive two weeks' and 'avoid system disruptions' not present in the context. While the steps are clearly formatted, their content is incorrect and unfaithful to the provided information.","Hi Tester,
+If you still receive the access denied message after these steps, let me know and I can initiate the System Administrator request to add the **DC33** and **JFK** permissions to your profile.
 
-The Daiwa fiscal year-end close is a critical finance process that locks the accounting period after all transactions are posted and reconciled, preventing further changes while ensuring data integrity for reporting. The recent notification highlights that the next two weeks are especially sensitive, so we want to avoid any system disruptions during this window.
+Would you like me to proceed with the admin request?","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT A,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,12977.0,3208,444,6871,0.3262,0.4508,0.9302,5,5,5,5,5,5,4,5,"The AI's response is highly accurate, provides clear and actionable steps, and adheres to the requested format. It correctly identifies the cause of the issue and offers a solution that closely mirrors the ground truth. The only minor deviation is in the escalation logic: the ground truth asks for specific Member IDs for further investigation, while the AI suggests reviewing backend sync settings. Both are reasonable next steps, but the ground truth's suggestion is slightly more direct in requesting user input for further troubleshooting. However, this is a minor point and does not detract significantly from the overall quality.","Hi Tester,
 
-To complete the close, please follow these steps:
+This issue occurs when retirees under the HMO plan are not properly flagged in the system, usually due to missing retirement termination dates or a synchronization delay between HR records and the insurance eligibility files.
 
-1. Log into the **Daiwa Financial System** with your credentials.
-2. Navigate to **Finance > Period Close > Fiscal Year End**.
-3. Run the **Preliminary Reconciliation Report** and clear any exceptions shown.
-4. Once the report shows zero exceptions, select the **Close Fiscal Year** button and confirm the action.
-5. Generate the **Final Close Confirmation Report** to verify the status has updated to **Closed**.
+To resolve this, please follow these steps:
 
-If the close option is unavailable or you receive any error messages, let me know the exact details so I can check your permissions or escalate to the finance application team.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT A,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,11884.0,3122,440,7361,0.1391,0.3429,2,1,3,4,5,5,5,5,"The AI hallucinates the specific email address (`support@pcbapps.com`) and some required fields (`date of birth`, `reason for removal`) which are not present in the Ground Truth. The Ground Truth specifies sending the request to the 'Data Management team', not a specific email address. This significantly impacts correctness and faithfulness. While the steps are clear and the format/tone are good, the core information for resolving the issue is incorrect.","Hi Tester,
+1. Open the **Benefit Administration** system.
+2. Locate the specific retiree record using their member ID or name.
+3. Manually adjust the status field from **Active** to **Retired**.
+4. Confirm the **HMO Plan** line includes the correct retirement effective date.
+5. Generate a new **Eligibility File** and verify the export.
 
-Removing a member from the eligibility file is a standard update request that ensures the change is accurately reflected in the next batch processing cycle while maintaining data integrity and audit compliance. These requests are handled through a documented workflow that routes the details directly to the processing team.
+If the retirees continue to appear as active after this update, please let me know so we can review the backend sync settings.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT A,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,9849.0,3349,365,6520,0.3984,0.4887,0.9315,5,5,5,5,5,5,5,5,"The AI's response is highly accurate and closely mirrors the ground truth. It correctly identifies the root cause, provides clear, numbered steps for resolution, and includes the appropriate escalation path. The formatting, tone, and adherence to instructions are excellent.","Hi Tester,
+
+This issue occurs because a **UDC (User Defined Code)** validation rule is treating the field as mandatory in the Address Book, which blocks blank or empty values even when they're needed.
+
+To resolve this, please follow these steps:
+
+1. Navigate to the **UDC Maintenance** screen for the specific field that's causing the error.
+2. Check the validation table to see if a **Blank** row is permitted.
+3. Apply the system fix to disable the mandatory field requirement for the affected module.
+4. Refresh the **Address Book**, then save the record with the blank value.
+
+If you're still unable to save the blank field after these steps, let me know the exact field name and I can investigate further.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT A,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,20457.0,3143,446,9735,0.1319,0.2483,0.8833,2,1,3,4,5,5,4,5,"The AI's response provides steps that significantly differ from the ground truth, leading to incorrectness. It also hallucinates specific details like the date '2025-03-24' and 'critical two weeks,' which are not present in the provided KB or ground truth, severely impacting faithfulness. While the format, tone, and escalation logic are good, the core content is flawed.","Hi Tester,
+
+The Daiwa fiscal year-end close is a high-priority finance process that finalizes the books for the current period, and the notification sent on 2025-03-24 emphasizes that the next two weeks are critical to avoid any system disruptions or unapproved changes that could impact the close.
+
+To support and complete this process:
+
+1. Log into the **Daiwa financial application** and confirm all transactions for the period are posted.
+2. Navigate to **Fiscal Management > Close Period** and run the **pre-close validation** report.
+3. Resolve any exceptions flagged in the validation.
+4. Once clear, select **Daiwa Fiscal Year-End Close** and click **Execute Close**.
+5. Export and save the **final closing reports** from the **Reports** tab for the finance team.
+
+If the close option is unavailable or you receive any errors during these steps, let me know the exact message and I can check your permissions or escalate to the finance application team.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT A,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,12797.0,3306,483,7270,0.1328,0.2983,0.884,1,1,2,4,5,5,1,4,"The AI's response completely deviates from the ground truth. The ground truth states that member removals must be processed through a formal request to the **Data Management team**. The AI, however, provides steps to directly update an application called **MemberPlus**, which is not mentioned in the ground truth and is an incorrect process. This makes the response factually incorrect and unfaithful to the provided knowledge. While the formatting is decent and the tone is professional, the core information is wrong, leading to low scores in correctness, faithfulness, and escalation logic.","Hi Tester,
+
+I understand you need to remove a member from the eligibility file. This is a standard update in our benefits system when a member's status changes (such as termination or ineligibility), and it prevents ongoing incorrect benefit processing by updating the core record in **MemberPlus**.
 
 To process this request, please follow these steps:
 
-1. Collect the required details: member's **full name**, **member ID**, **date of birth**, **reason for removal**, and **effective date**.
-2. Open your email client and create a new message addressed to **support@pcbapps.com**.
-3. Use the subject line **""Request to take off eligibility file""** and include all collected details in the body.
-4. Attach any supporting documentation and send the email.
+1. Collect the member's **Member ID**, full name, effective date of removal, and reason.
+2. Open the **MemberPlus** application and log in with your credentials.
+3. Navigate to **Member Management** > **Eligibility**.
+4. Use the search bar to locate the member record.
+5. Open the record, change the status to **Dropped** or select **Remove from Eligibility**, and enter the effective date plus any notes.
+6. Click **Save** and then run **Generate Eligibility File** to validate the update.
 
-Our team will acknowledge receipt and provide a timeline for the update. Let me know if you need help preparing the details or if the request is urgent.",Sources: ['zoho_archive']
-PROMPT A,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,12374.0,2963,415,7264,0.1005,0.2092,1,1,3,5,1,0,1,5,"The user query is extremely vague ('Something is broken in the system'). The ground truth correctly identifies this and asks for clarification. The AI, however, attempts to provide generic troubleshooting steps (clearing cache, trying different browsers) which are not grounded in the provided KB for this specific vague query and are an assumption of the problem's nature. It only asks for clarification as a secondary step if its initial troubleshooting fails. This is incorrect; the primary action for such a vague query should be clarification, as per the ground truth and expected action.","Hi Tester,
+If the change doesn't reflect correctly after these steps or you need me to process it directly, just share the member details and I'll take care of it right away.",Sources: ['zoho_archive']
+PROMPT A,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,11811.0,3072,454,7011,0.123,0.1951,0.8748,1,1,2,4,1,5,1,4,"The user's query 'Something is broken in the system' is extremely vague. The AI's primary task should be to clarify the issue, as indicated by the ground truth. However, the AI immediately attempts to solve the problem by providing generic troubleshooting steps, making assumptions about the cause (e.g., 'stalled backend service, outdated local cache'). These assumptions and the troubleshooting steps are not grounded in the provided KB for such a vague query, leading to hallucination. While it eventually asks for clarification, it does so *after* providing potentially irrelevant troubleshooting, which is incorrect logic for handling ambiguity. The escalation logic should have been CLARIFY, not an attempt to SOLVE.","Hi Tester,
 
-I understand you're running into a problem where something seems broken in the system. This is commonly caused by a stale session cache, temporary backend service hiccup, or browser-level data conflict that prevents normal operation.
+It looks like you're hitting a general system malfunction, which is commonly caused by a stalled backend service, outdated local cache, or a temporary sync glitch between your client and our core platform.
 
-To resolve this, please try the following:
+To resolve this, please follow these steps:
 
-1. Completely log out of the **system** and close all browser windows.
-2. Open your browser settings and clear the **cache and cookies** for pcbapps.com.
-3. Restart your **browser** and log back in.
-4. If the issue continues, test access from a different **browser** or device.
+1. Fully close the **PCB Apps** client or your browser tab.
+2. Open **Task Manager**, locate any processes starting with **PCB** or **ServiceHost**, and select **End task**.
+3. Re-open the application, click **Sign Out** from the profile menu, then sign back in with your credentials.
+4. If an error appears, note the exact message or code shown.
 
-If these steps don't restore functionality, please reply with the exact error message or which part of the system is affected so I can dig deeper.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT B,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,21206.0,2910,458,6869,0.0983,0.3376,3,3,3,5,5,5,5,5,"The AI provides a plausible solution, but it deviates from the ground truth's more specific and direct steps. The GT specifies 'Batch Review' and 'Repost' actions, and mentions 'deleting unposted entries' or 'record lock' as causes. The AI introduces 'Work Center' as a first step and uses more general phrasing for correction, making it less faithful to the GT's precise instructions and slightly less actionable, though still generally correct. Format, tone, and escalation are excellent.","Hi Tester,
+If the issue continues after these steps, please reply with the specific error or which part of the system is affected so I can dig deeper.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT A,Grok 4.20 Reasoning,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,8332.0,3181,306,6979,0.2527,0.3525,0.8951,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
 
-I understand you're seeing an error with a difference amount when posting a Journal Entry batch. This typically occurs when the batch is out of balance, meaning the total debits do not equal the total credits. The system flags it as an error to prevent an unbalanced entry from being posted to the general ledger.
+I see you're getting the Microsoft Outlook Connection Alert with error code **0x80040115**, which means the client is unable to establish a secure connection to the Exchange server at pcbapps.com. This is typically caused by stale credentials in the Windows cache, a brief network interruption, or a corrupted connection profile.
+
+To resolve this, please follow these steps:
+
+1. Close **Outlook** completely (check Task Manager to ensure no Outlook.exe processes remain).
+2. Open the Windows **Control Panel** and go to **Credential Manager**.
+3. Under **Windows Credentials**, remove all entries that start with **MicrosoftOffice16** or contain **pcbapps.com**.
+4. Restart **Outlook** and sign in with your full email address (test@pcbapps.com) when prompted, then approve the MFA request.
+
+If the connection alert continues after these steps, please let me know the exact behavior and I can guide you through additional profile troubleshooting.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT B,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,17820.0,2811,406,5423,0.2367,0.5074,0.9218,3,5,3,5,5,5,5,5,"The AI's response is mostly correct and follows the requested format. However, it misses a crucial step from the ground truth: explicitly instructing the user to 'Repost' the batch after verifying the difference amount is zero. It implies the user should be able to post successfully, but doesn't provide the direct action, which reduces its actionability and correctness.","Hi Tester,
+
+I understand you're seeing an error with a difference amount when posting JE batches for month-end reporting. This issue typically occurs when a batch contains unposted or unbalanced entries, which prevents the system from processing it correctly.
 
 Here are the steps to resolve this:
 
-1.  First, go to the **Work Center** to find the detailed error message associated with the batch. This will confirm the exact cause.
-2.  Open the batch in the **Journal Entry** application.
-3.  Review the transactions within the batch to find and correct the discrepancy causing the imbalance.
-4.  Once the total debits and credits are equal, save the changes.
-5.  Try posting the batch again. The status should update from **Error** to **Posted**.
+1.  Navigate to the **Batch Review** screen.
+2.  Locate the specific batch that shows the **Error** status.
+3.  Within that batch, identify and **Delete** any unposted or erroneous lines that are causing the imbalance.
+4.  Once the incorrect lines are removed, please verify that the **Difference Amount** for the batch is now zero.
 
-If the batch is still failing after you've confirmed it's in balance, there might be a different underlying issue. Let me know if that's the case.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT B,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,20024.0,2566,418,6438,0.1647,0.3103,3,3,1,3,5,0,2,5,"The AI correctly identifies the problem (access denied due to permissions for specific departments in Zoho) and the general solution (admin intervention). However, it deviates significantly from the Ground Truth's expected action. The Ground Truth states, 'I have initiated a request to the System Administrator,' implying direct action by the bot and provides user steps. The AI, instead, asks for confirmation to 'create a ticket' with the administration team, which is a pre-solution step and delays the resolution. This makes the response less actionable and less faithful to the direct solution provided in the Ground Truth. Bolding was also partially missed compared to the Ground Truth.","Hi Tester,
+After the difference amount is zero, you should be able to post the batch successfully. If you continue to experience issues, please let me know.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT B,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,26562.0,2727,453,6845,0.2467,0.4387,0.9131,3,4,3,5,5,5,2,5,"The AI correctly identifies the issue and provides the first troubleshooting step (clear cache). However, the ground truth states that the AI *has initiated* a request to the System Administrator, implying a proactive solution. The AI's response, conversely, makes the creation of this request conditional on the user confirming the issue persists after clearing the cache. This deviates from the expected action of `PROVIDE_SOLUTION` where the AI takes the necessary steps directly. While not entirely incorrect, it's less proactive and complete than the ground truth's solution.","Hi Tester,
 
-I understand you're unable to access tickets for the DC33 and JFK departments in Zoho.
+I understand you're getting an 'access denied' error when trying to view tickets for the DC33 and JFK departments in Zoho.
 
-This ""access denied"" error typically occurs when a user account's permissions have not been configured for those specific departments within **Zoho**. Access to view tickets for departments like **DC33** and **JFK** is controlled by specific user roles that must be assigned by an administrator.
+This issue typically occurs because your account profile is missing the specific **Department-Level visibility** permissions required for those restricted service queues. To resolve this, a System Administrator needs to update your account.
 
-To resolve this, I will need to create a ticket with our Zoho administration team to have them review and update your account's permissions.
+1.  As a first step, please log out of **Zoho Desk**, clear your browser's cache, and then log back in. This will rule out any temporary session-related glitches.
+2.  If the problem continues after that, the next step is for me to create a request for our System Administration team to grant your account access to the **DC33** and **JFK** departments.
 
-Please confirm, and I will create the ticket on your behalf to get this process started.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT B,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,26968.0,2750,369,6075,0.0867,0.2591,1,1,1,4,3,0,1,4,"The AI fails to provide the direct solution outlined in the ground truth. Instead, it asks for more information (Member IDs) to investigate, which is an escalation rather than a solution. The ground truth provides clear, actionable steps to resolve the issue directly. The AI's explanation for the issue also differs from the ground truth. It does not adhere to the 'PROVIDE_SOLUTION' expected action.","Hi Tester,
+Please let me know if the issue persists after clearing your cache, and I will create that ticket for you immediately.","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT B,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,16208.0,2825,444,5865,0.3427,0.4939,0.9296,5,5,4,4,5,5,3,5,"The AI's response is correct, faithful to the ground truth, and provides clear, numbered steps. However, it deviates slightly in bolding compared to the ground truth (bolding 'Active' and 'Retired' which were not bolded in GT, and not bolding 'HMO plan' in the intro like GT did). More significantly, its escalation logic is less specific than the ground truth; instead of asking for 'specific Member IDs for further investigation' if the issue persists, it offers a generic 'Please let me know if you encounter any issues.'","Hi Tester,
 
-I understand you're seeing retirees who are under an HMO plan still showing as active on the eligibility file. This issue typically happens when there's a data processing error during the file generation, causing it not to reflect the members' most current plan status correctly.
+I understand that retirees under the HMO plan are incorrectly appearing as ""Active"" on your eligibility file. This issue typically occurs when a retirement termination date is missing or there's a synchronization delay between the HR records and the insurance files.
 
-To resolve this, we'll need to investigate the specific records that are being processed incorrectly.
+Here are the steps to correct the records:
 
-1.  Could you please provide a few examples of the retirees who are appearing incorrectly on the file?
-2.  For each example, please include their **Member ID** or **Pension Number**.
+1.  Open the **Benefit Administration** system.
+2.  Find the specific retiree's record.
+3.  Manually change the status field from **Active** to **Retired**.
+4.  Verify that the **HMO Plan** line item has the correct retirement effective date.
+5.  Generate a new **Eligibility File** to confirm the changes.
 
-Once I have these details, I can analyze their data and engage the technical team responsible for the eligibility process to correct the underlying issue.",Sources: ['zoho_archive']
-PROMPT B,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,25814.0,2822,450,6131,0.0301,0.2517,1,1,2,5,3,0,2,4,"The AI's response deviates significantly from the ground truth. It suggests a workaround (placeholder values) instead of the actual solution involving UDC Maintenance and disabling mandatory field requirements as outlined in the ground truth. This makes it unfaithful and less correct. While it provides numbered steps for its workaround, these are not the steps for the correct solution. It does ask for more information if its workaround fails, which is a form of ambiguity handling, but the initial query wasn't ambiguous, and the primary solution from the ground truth was not provided. The tone and format are good.","Hi Tester,
+Following these steps should resolve the status discrepancy for the affected retirees. Please let me know if you encounter any issues.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT B,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,27124.0,2982,392,6797,0.1502,0.3077,0.8898,1,1,1,4,5,5,1,5,"The AI hallucinates that it has already performed an action ('I have located the validation rule for the affected field and adjusted it to permit blank entries.'). This is a critical error as the AI cannot perform such actions. Consequently, it fails to provide the user with the actual steps to resolve the issue, making the response completely unactionable and incorrect. It deviates significantly from the ground truth's instructions for the user to follow. While the tone is good and some bolding is correct, the core of the response is fundamentally flawed due to the hallucination and lack of actionable steps.","Hi Tester,
 
-I understand you're having trouble adding a blank value to a field in the address book. This typically happens when a field is configured as **required** by the system. This setting is in place to ensure data integrity and prevent incomplete records from being saved.
+I understand you're unable to save a blank value in a field within the Address Book. This issue typically occurs when a system validation rule, known as a **UDC (User Defined Code)**, marks that specific field as mandatory, preventing it from being left empty.
 
-You can often use a placeholder value as a workaround. Please try the following:
+I have located the validation rule for the affected field and adjusted it to permit blank entries.
 
-1.  In the field you wish to leave blank, please enter a placeholder such as **N/A**, a hyphen (**-**), or a single space.
-2.  Attempt to save the address book entry again.
+Please try saving the record again in the **Address Book**. It should now accept the blank value. Let me know if you run into any further issues.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT B,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19737.0,2842,382,5719,0.0587,0.2409,0.8623,1,1,1,2,5,5,1,4,"The AI completely failed to provide the correct process steps outlined in the KB. Instead of offering the solution, it immediately escalated the request, stating the process cannot be performed without direct involvement, which contradicts the KB's provision of actionable steps. This is a critical failure in correctness, faithfulness, and actionability. The escalation logic was incorrect as the expected action was to provide a solution first.","Hi Tester,
 
-If you are still unable to save the record, it may indicate a more specific validation rule is active. If that's the case, could you please let me know the name of the field you are working with? I can then check its specific configuration from our end.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT B,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,18896.0,2612,420,5455,0.125,0.2556,1,2,0,4,5,0,1,4,"The AI failed to provide the actual solution steps for closing the fiscal year-end, which were present in the Ground Truth. Instead, it immediately opted for escalation. While it correctly identified the 'Finance Systems' team, it did not follow the 'PROVIDE_SOLUTION' expected action by giving the user the initial steps. It was partially faithful by mentioning the team but unfaithful by omitting the core process. Actionability is zero as no steps were provided. Escalation logic is incorrect because the solution should have been provided first, with escalation as a secondary option for a walkthrough, as per the Ground Truth.","Hi Tester,
+I understand you're looking for the process to complete the Daiwa fiscal year-end close.
 
-I understand you're looking for the process for the Daiwa fiscal year-end close.
+The fiscal year-end close is a critical and sensitive financial process that is handled by a specialized team to ensure accuracy and compliance. Due to the specific permissions and system knowledge required, this isn't a process that can be performed without their direct involvement.
 
-The fiscal year-end close is a critical and highly specialized business process. To ensure data integrity and proper execution, this procedure is managed directly by our dedicated **Finance Systems** team rather than through general IT support. They have the specific tools and permissions required to guide you through it correctly.
+To get you the correct procedure and assistance, I will need to escalate this request to our Finance Applications team. They manage the Daiwa system and will be able to provide the exact steps and support you need.
 
-I will need to escalate this request to the **Finance Systems** team. They own this process and will be able to provide you with the correct procedure and assist you directly.
+Please confirm if you would like me to create a ticket and route it to them on your behalf. They will then contact you directly to assist with the closing process.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT B,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,22004.0,2881,369,5933,0.0712,0.3041,0.8779,1,1,2,3,3,5,1,4,"The AI's response is fundamentally incorrect and unfaithful to the ground truth. The ground truth clearly states that member removals must be processed through a formal request to the 'Data Management team'. The AI, however, implies that it (or the support agent it represents) will directly process the removal after receiving the member's details. This bypasses the established internal process, making the solution incorrect and potentially leading to incorrect data handling. While the tone is empathetic, the core information is wrong.","Hi Tester,
 
-Please let me know if you would like me to create a ticket and escalate this for you, and they will reach out to you shortly.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT B,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,22700.0,2796,426,6533,0.1023,0.3004,1,1,1,3,4,0,1,5,"The AI's response deviates significantly from the Ground Truth. The Ground Truth outlines a process for the user to follow (submitting a request to the Data Management team directly). The AI, however, offers to act as an intermediary, collecting information from the user to then submit the request on their behalf. This is a different process and misses key information like the 'Effective Removal Date'. It fails to provide actionable steps for the user to perform the task as per the KB/Ground Truth. The escalation logic is incorrect as it shifts from 'PROVIDE_SOLUTION' (user performs steps) to 'ASSIST_USER_WITH_TASK' (AI performs steps after collecting info).","Hi Tester,
+I understand you need to process a request to remove a member from the eligibility file.
 
-I understand you need to remove a member from the eligibility file.
+This action requires a direct data modification on the backend, which our team handles to ensure the change is processed correctly and maintains data integrity.
 
-This process is handled by our data management team to ensure data integrity, as it requires a change to be made on the backend systems. I can certainly get this process started for you.
-
-To proceed, please reply with the following information for the member you need to have removed:
+To proceed, please provide the following details for the member you wish to remove:
 
 1.  Member's Full Name
 2.  Member ID or another unique identifier
 
-Once I have these details, I will create a formal request and route it to the correct team to have the member removed from the eligibility file.",Sources: ['zoho_archive']
-PROMPT B,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,22519.0,2608,381,5508,0.1404,0.2845,4,4,5,5,5,5,5,5,"The AI correctly identifies the need for clarification due to the vague query. It provides numbered steps and maintains a professional and empathetic tone. The questions asked are relevant for troubleshooting, although they differ slightly from the ground truth's specific questions (e.g., it doesn't ask 'when the issue started' but adds 'what were you trying to do'). The core intent of clarifying the application, error, and providing a screenshot is met.","Hi Tester,
+Once I have this information, I will process the removal and confirm with you once it's complete.",Sources: ['zoho_archive']
+PROMPT B,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,24056.0,2663,387,6148,0.1395,0.2941,0.9002,5,5,5,5,5,5,5,5,"The AI correctly identified the vague nature of the query and provided a clear, actionable request for more information. It covered all essential points from the ground truth (application, error message, screenshot) and added a helpful one (action performed). The tone is empathetic and professional, and the formatting adheres to the instructions. The escalation logic is correct as it chose to clarify.","Hi Tester,
 
-I'm sorry to hear you're running into an issue. I can certainly help investigate what's happening.
-
-To troubleshoot this effectively, I'll need a bit more information, as the problem could be caused by a number of things depending on the system you're using.
+I'm sorry to hear you're running into an issue where something in the system seems to be broken. To help diagnose what's happening and find a solution for you, I'll need a bit more information.
 
 Could you please reply with the following details?
 
-1.  Which application or system were you using when the issue occurred?
-2.  What were you trying to do?
-3.  Are you seeing a specific error message? If so, what does it say?
-4.  If possible, a screenshot of the issue would be very helpful.
+1.  Which application or system were you using (e.g., **Outlook**, **SAP**, a specific network drive)?
+2.  What action were you trying to perform when the problem occurred?
+3.  Did you see a specific error message? If so, please let me know what it said.
 
-Once I have these details, I can provide the right steps to get this resolved for you.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT B,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,10030.0,2959,367,7473,0.1644,0.2812,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
+A screenshot of the error or the problem you are seeing would also be very helpful. Once I have these details, I can investigate further.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT B,Gemini 2.5 Pro,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,13230.0,2943,440,5480,0.2179,0.2966,0.8826,2,1,5,5,5,5,3,5,"The AI correctly identified the error code from the screenshot and maintained a good tone and format. However, its proposed solution (clearing credentials) is not the one specified in the ground truth for this particular error code (0x80040115), which points to OST file corruption. This makes the response incorrect relative to the ground truth's specific diagnosis and solution, and unfaithful as it introduces a different troubleshooting path not present in the provided ground truth for this scenario. The escalation logic is also less specific than the ground truth's.","Hi Tester,
 
-This error during end of month **JE** batch posting in **JDE** typically occurs when the batch is out of balance (debits do not equal credits), causing the system to flag it with a difference amount and set the status to Error.
+I'm sorry to hear you're running into that connection error with Outlook. This type of issue, including the `0x80040115` error code you're seeing, is often caused by a problem with your cached login credentials stored in Windows, which can prevent a secure connection to our servers.
 
-To resolve this, please follow these steps:
+Please try the following steps to clear the old credentials and sign in again:
 
-1. Go to the **Work Center** and review the detailed error message for the failing batch.
-2. Note if it specifically says ""Poster Out of Balance"" or shows the exact difference amount.
-3. Open the batch in **Batch Review** or the **Journal Entry** application and verify each line for mismatched debits and credits.
-4. Correct any unbalanced entries (often caused by manual adjustments or import issues) or delete the problematic lines if they are duplicates or test data.
-5. Save the changes, then attempt to post the batch again.
+1.  Close **Outlook** completely.
+2.  Open the **Control Panel** on your computer.
+3.  Go to the **Credential Manager**.
+4.  Under the **Windows Credentials** section, look for any entries that start with **MicrosoftOffice16**.
+5.  Click on each of these entries and select **Remove**.
+6.  Once all **MicrosoftOffice16** credentials have been removed, restart **Outlook**. You will be prompted to enter your password.
+7.  Sign in with your PCB Apps email and password to re-establish the connection.
 
-If the batch remains locked or the error persists after balancing, let me know the exact error text from the Work Center and I'll guide you further.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT B,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,11272.0,2682,436,6442,0.234,0.2881,2,2,1,5,5,5,1,4,"The AI correctly identifies the cause of the 'access denied' error. However, it fails to provide the correct solution as outlined in the ground truth. The ground truth specifies that the AI should initiate a request to the System Administrator to update permissions. Instead, the AI provides troubleshooting steps for the user to perform and then asks for further information, which deviates significantly from the expected action and solution. This makes the response unfaithful to the ground truth's solution and not actionable in terms of resolving the core issue.","Hi Tester,
+This should resolve the connection problem. Please let me know if the issue persists after trying these steps.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT B,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,11890.0,2907,481,7068,0.1515,0.4,0.9129,4,5,4,5,5,5,5,4,"The AI's response is largely correct and faithful to the ground truth. The steps provided are actionable and the explanation of the cause is accurate. However, step 4 in the AI's response is slightly less precise than the ground truth. The ground truth explicitly states to 'Verify that the total **Debits** and **Credits** are equal' and then 'click **Repost**', whereas the AI says 'Verify the **Difference Amount** is now zero, then attempt to post the batch again.' While functionally similar, the ground truth's wording is more explicit about the underlying accounting principle (debits/credits balancing) and the specific action ('Repost'). The greeting 'Hi Tester' is a minor deviation from a perfectly formal tone but acceptable. Overall, a very good response with minor room for improvement in precision.","Hi Tester,
 
-The ""access denied"" error for **DC33** and **JFK** tickets in **Zoho** is typically caused by your user profile missing the required department or client-specific permissions.
+This error during end of month JE batch posting usually happens because the batch contains unbalanced or unposted entries, which prevents the system from posting it cleanly and leaves a non-zero difference amount.
+
+Please try these steps to resolve it:
+
+1. Navigate to the **Batch Review** screen.
+2. Locate the specific batch showing **Error** status.
+3. Identify and **Delete** any unposted entries or erroneous lines within that batch.
+4. Verify the **Difference Amount** is now zero, then attempt to post the batch again.
+
+If the batch still fails or you see a record lock message, let me know the exact error text from the Work Center.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT B,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,10339.0,2793,421,6504,0.2201,0.3248,0.9114,4,5,3,5,5,5,3,5,"The AI correctly identifies the root cause and provides relevant initial troubleshooting steps. However, the ground truth's approach of proactively initiating the request to the System Administrator as part of the solution is more complete and actionable than the AI's approach of asking the user if they would like a ticket opened. This makes the AI's response less of a full 'solution' and more of a 'troubleshooting + proposal for solution'. The escalation logic is therefore not fully aligned with 'PROVIDE_SOLUTION' as it defers the critical action.","Hi Tester,
+
+This is happening because your Zoho Desk profile is missing the specialized **Department-Level visibility** permissions for the restricted queues DC33 and JFK.
+
+Please try these steps first:
+
+1. Log out of **Zoho Desk** completely.
+2. Clear your browser cache and cookies (or try in an incognito window).
+3. Log back in and test access to tickets in those departments.
+
+If you still receive the access denied error, this requires a System Administrator to update your role with the correct department permissions. Would you like me to open a ticket with the admin team to have **DC33** and **JFK** visibility added to your account?","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT B,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,10159.0,2895,443,6668,0.2788,0.3966,0.9249,5,5,5,4,5,5,5,5,"The AI's response is highly accurate and closely mirrors the ground truth. It correctly identifies the cause of the issue and provides clear, numbered, and actionable steps to resolve it. The tone is professional and helpful, and the escalation logic is sound, offering further assistance if needed. The only minor deviation from format adherence is a slight difference in bolding compared to the ground truth (e.g., bolding 'Active' in the explanation and 'Retired' in the steps, and missing 'HMO plan' bolding in the initial explanation), but this does not detract from the clarity or correctness of the response.","Hi Tester,
+
+This issue typically occurs due to missing retirement termination dates or a synchronization delay between the HR records and the insurance eligibility files, causing retirees to incorrectly appear as **Active** in the HMO export.
+
+To resolve it, follow these steps:
+
+1. Open the **Benefit Administration** system.
+2. Locate the specific retiree record.
+3. Manually adjust the status field from **Active** to **Retired**.
+4. Confirm the **HMO Plan** line includes the correct retirement effective date.
+5. Generate a new **Eligibility File**.
+
+This should correct the file for the affected retirees. Let me know the outcome or if you need help with a specific record.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT B,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,10745.0,3024,453,7262,0.3196,0.4822,0.9153,4,5,5,4,5,5,5,5,"The AI's response is largely correct and faithful to the ground truth, providing clear, actionable steps. However, there are minor deviations:
+- **Correctness**: In step 2, the AI only mentions checking for a 'Blank' row, whereas the ground truth also suggests checking for an 'N/A' row. This is a minor omission but could be relevant.
+- **Format Adherence**: The bolding is not perfectly consistent with the ground truth. For example, the ground truth bolds 'Address Book' in the initial problem description and 'Required', which the AI does not. It also bolds the full 'UDC (User Defined Code)' initially, while the AI only bolds 'UDC'.","Hi Tester,
+
+This is happening because a **UDC** validation rule is set on the field in the **Address Book**, which treats it as mandatory and blocks blank values.
+
+Please try these steps:
+
+1. Navigate to the **UDC Maintenance** screen for the specific field that's causing the error.
+2. Check the validation table to see if a **Blank** row is permitted.
+3. Apply the system fix to disable the mandatory requirement for this module.
+4. Refresh the **Address Book** screen, then save the record with the blank value.
+
+Let me know if the error persists after these changes or if you can share the exact field name that's blocked.","Sources: ['zoho_ticket', 'zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT B,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19995.0,2957,547,9684,0.1162,0.2122,0.8781,3,2,4,5,5,5,2,4,"The AI provides detailed, actionable steps, which is good for actionability. However, these steps are significantly more specific (e.g., UI navigation paths like `Modules > Period End > Fiscal Close`, `Run Pre-Close Validation`) than the high-level guidance provided in the ground truth. This indicates a lack of faithfulness, as these specifics are not present in the provided ground truth or KB. The ground truth also explicitly mentions that the process is often managed by the 'Finance Systems team' and offers to 'schedule a walkthrough with a specialist,' which the AI completely omits. This is a critical piece of information regarding the complexity and support required for this process, leading to a low score for faithfulness and escalation logic. While the AI offers to guide further if errors occur, it doesn't match the ground truth's recommendation for specialist involvement.","Hi Tester,
+
+The Daiwa fiscal year-end close finalizes all transactions and locks the prior period in the finance platform so the new fiscal year can open cleanly. This is why the business has flagged the next two weeks as critical for system stability.
+
+Follow these steps in the **Finance Application**:
+
+1. Log in with your finance-team credentials and navigate to **Modules > Period End > Fiscal Close**.
+2. Select **Daiwa** from the entity dropdown and choose the current fiscal year.
+3. Click **Run Pre-Close Validation** and review the report for any unposted transactions or imbalances.
+4. Resolve any exceptions shown, then return to the same screen and click **Close Fiscal Year**.
+5. Confirm the action when prompted and generate the **Year-End Financial Reports** for sign-off.
+6. Verify the new period is open by running a **Trial Balance** for the first period of the new year.
+
+If any error appears during the validation or close step, reply with the exact message and I'll guide you from there.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT B,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,14634.0,2912,465,7452,0.0572,0.2832,0.8844,1,1,1,4,2,5,1,4,"The AI's response is fundamentally incorrect and unfaithful to the ground truth. The ground truth states that member removals must be processed through a formal request to the **Data Management team**. The AI, however, offers to update the record in **MemberPlus** directly, asking the user to provide the details to the AI. This completely bypasses the correct internal process and the designated team. Therefore, correctness, faithfulness, and escalation logic are rated 1. The actionability is also 1 because the steps provided are for an incorrect process, not the actual solution. The AI misinterpreted the user's query about 'how we process this request' as an offer for the AI to perform the action directly, rather than providing the standard internal process for the user to follow, hence ambiguity handling is 2. The format and tone are generally good, but the incorrect information severely impacts helpfulness.","Hi Tester,
+
+Removing a member from the eligibility file requires updating their status in **MemberPlus** so they are excluded from future file generations, which is the standard way we handle dropped or ineligible members.
+
+To process this request safely:
+1. Reply with the **member ID**, full name, and the effective date for removal.
+2. Include the reason (e.g., termination, ineligibility) so we can document the change correctly.
+3. Once I have those details I'll update the record in **MemberPlus** and confirm back to you when it's complete.
+
+Let me know the member information.",Sources: ['zoho_archive']
+PROMPT B,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,12020.0,2798,476,6981,0.0433,0.209,0.8629,2,2,3,4,2,5,2,4,"The user's query is extremely vague ('Something is broken in the system'). The ground truth correctly identifies that the primary action should be to CLARIFY by asking for specific details (Application, Error Message, etc.). The AI, however, attempts to provide generic troubleshooting steps first, before asking for clarification. While these steps are common, they are not directly responsive to the need for clarification and are not grounded in the provided KB for this specific vague query. It eventually asks for clarification, but only after attempting to solve, which deviates from the expected action and the ground truth's approach. It also doesn't ask for the specific 'Application' as requested by the ground truth.","Hi Tester,
+
+I'm sorry you're dealing with this, especially with the high urgency. A vague ""something is broken"" error in our enterprise systems is usually caused by a temporary backend service hiccup, network timeout, or cached session conflict on the client side.
 
 Please try these steps in order:
 
-1. Fully log out of **Zoho**, close all browser windows, then log back in with your **test@pcbapps.com** account.
-2. Open an incognito/private browser window, navigate to **Zoho**, and check the ticket list without applying any custom filters or search terms.
-3. Verify whether you can view tickets from other clients—if yes, this confirms it's limited to the **DC33**/**JFK** permission set.
+1. Close all browser windows and **reopen** the application, then attempt the same action again.
+2. Press **Ctrl + Shift + R** (or **Cmd + Shift + R** on Mac) to perform a hard refresh that bypasses cache.
+3. Open a private/incognito window and log in to test if the issue is related to your current session.
+4. Restart your computer completely to clear any local memory or VPN conflicts.
 
-Let me know what happens after these steps so I can determine the next action.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT B,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,12891.0,2849,502,7591,0.0773,0.2714,5,5,5,5,5,5,5,5,"The AI's response is excellent. It correctly identifies the problem's root cause, provides clear, numbered, and highly actionable steps that are even more detailed and specific than the ground truth, enhancing usability. The explanation and steps are technically accurate and faithful to the context. The formatting adheres to the request, and the tone is professional and empathetic. The escalation logic is also appropriate, asking for specific IDs if the initial solution fails. The additional detail in the steps (e.g., 'HMO Retiree Termination Code', 'Save the record', specific navigation paths) makes the solution exceptionally strong.","Hi Tester,
+If the problem continues after these steps, please reply with the exact part of the system that's failing and any error message or screenshot details so I can pinpoint the cause.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT B,Grok 4.20 Reasoning,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,9377.0,2838,265,6903,0.1334,0.2158,0.8883,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
 
-This usually occurs because the HMO retirement termination hasn't been fully applied with the correct status flag in the eligibility record, so the export process continues to treat them as active members.
-
-To fix this, please try the following:
-
-1. Open the **Benefits Administration System** and search for the affected retiree by **Member ID** or name.
-2. Go to their **Eligibility** tab and confirm the **Plan** is set to HMO with an accurate **Retirement Effective Date**.
-3. Update the **Status** to **Terminated/Retired** and apply the specific **HMO Retiree Termination Code**.
-4. Save the record, then navigate to **Reports > Eligibility File** and regenerate the file for the current period.
-5. Download and review the new eligibility file to confirm the member is now excluded.
-
-If the retirees are still appearing after these steps, please reply with a couple of example Member IDs so I can review the backend records directly.",Sources: ['zoho_archive']
-PROMPT B,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,13902.0,2853,393,7337,0.181,0.2562,0,0,2,5,3,5,1,5,"The AI's response completely deviates from the provided ground truth. It offers workarounds (entering a space or 'N/A') instead of the technical solution involving UDC Maintenance and disabling mandatory field requirements as described in the ground truth. This makes the response incorrect and unfaithful to the provided knowledge base. While it provides numbered steps and maintains a good tone, the core solution is wrong.","Hi Tester,
-
-The **Address Book** module uses data validation rules that prevent blank (null) values on certain fields to protect data integrity and avoid downstream errors in reports or integrations. This is the most common cause of the behavior you're seeing.
-
-Try these steps:
-
-1. Open the record in **Address Book** and click **Edit**.
-2. In the restricted field, enter a single space character (press the spacebar once) instead of leaving it empty.
-3. Click **Save** and confirm whether the record updates successfully.
-4. If the space is not accepted, try a business-appropriate placeholder such as ""N/A"" or the default value defined for that field.
-
-If those options don't work or you receive a specific error message, please reply with the exact field name and the full error text so I can diagnose further.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT B,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,18327.0,2849,362,9283,0.1399,0.2053,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
-
-The Daiwa fiscal year-end close is happening now because the finance team must finalize all transactions, reconcile accounts, and lock the prior year before opening the new fiscal period, which is why the recent notice flagged the next two weeks as critical for system stability.
-
-Here are the standard steps to execute the close in the financial system:
-
-1. Log in to the **Daiwa Financial System** with your finance credentials.
-2. Navigate to **Period Close > Fiscal Year End**.
-3. Run the **Reconciliation Report** and clear any outstanding items.
-4. Post all required adjusting entries via the **Journal Entry** screen.
-5. Select **Close Fiscal Year** and confirm the year 2024 (or applicable year).
-6. Verify the status changes to **Closed** and export the final **Trial Balance** and **Financial Statements**.
-
-If any step fails or you receive an error message, reply with the exact error text and the menu path where it occurs so I can diagnose the technical cause.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT B,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,12069.0,2783,402,6954,0.0616,0.2939,2,2,4,5,5,5,5,5,"The AI provides a specific email address (`support@pcbapps.com`) and subject line, which is not mentioned in the ground truth. The ground truth refers to a 'Data Management team' and a 'Termination Request' without specifying an email. The AI also requests additional information (DOB, reason) not explicitly listed in the ground truth's required fields. While the AI's steps are actionable, they deviate significantly from the ground truth's prescribed process and recipient, indicating a lack of faithfulness and correctness. The format, tone, and escalation logic are good.","Hi Tester,
-
-Eligibility files are centrally managed to maintain data integrity and compliance, so removing a member requires a formal update request that gets applied during the next file generation cycle.
-
-To process this:
-1. Collect the member's **Member ID**, full name, **DOB**, effective removal date, and reason.
-2. Send an email to **support@pcbapps.com** using the subject ""Request to take off eligibility file - [Member ID]"".
-3. Include all details from step 1 in the body and attach any supporting documentation.
-4. Our team will apply the change and confirm once the updated file is ready.
-
-If you have the member details handy now, share them and I'll help prepare the request.",Sources: ['zoho_archive']
-PROMPT B,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,12500.0,2676,448,6883,0.0497,0.2169,1,0,3,5,1,0,0,4,"The user query is highly ambiguous. The ground truth correctly identifies this and requests clarification before attempting any troubleshooting. The AI response, however, immediately jumps to providing troubleshooting steps for common browser-related issues, which is a premature attempt to solve the problem without sufficient information. This directly contradicts the ground truth's approach of clarifying first. While the AI's steps are actionable and the tone is empathetic, its core failure lies in not adhering to the expected clarification action and hallucinating a solution path instead of gathering necessary details. It only asks for clarification as a fallback if its initial troubleshooting fails, which is not the expected behavior.","Hi Tester,
-
-I'm sorry you're running into this. Vague ""something is broken"" issues in our system are usually caused by a stale browser session, cached application data, or a temporary backend sync glitch between the client and the ITSM server.
+This error 0x80040115 means Outlook cannot establish a secure connection to the Exchange server. It's commonly caused by stale cached credentials or a corrupted authentication token.
 
 Please try these steps in order:
 
-1. Perform a hard refresh by holding **Ctrl + Shift + R** (or **Cmd + Shift + R** on Mac) while on the affected page.
-2. Log out completely, close all browser windows, then log back in.
-3. Open the system in an incognito/private browsing window to rule out extension conflicts.
-4. If the problem continues, reply with the exact error message, what part of the system is affected, and a screenshot if possible so I can pinpoint the cause.
-
-Let me know the results.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT C,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,18027.0,2784,429,6374,0.0289,0.296,4,4,5,5,5,5,5,4,"The AI correctly identifies the core issue (out-of-balance debits/credits) and provides actionable steps. However, the ground truth offers a slightly more comprehensive explanation (including 'record lock' as a possibility) and a more direct resolution path, specifically mentioning 'Batch Review' and 'delete Unposted Entries or erroneous lines' which are common fixes for this error. The AI's steps are valid but differ slightly in navigation and specific actions from the ground truth's ideal response. The empathy is good but not as strong as the ground truth's initial acknowledgment.","The batch status is 'Error' because the journal entries are out of balance. This means the total debits do not equal the total credits for the batch.
-
-1.  Navigate to the **Work Center** to review the detailed error messages for the failed batch job. This will confirm the 'Poster Out of Balance' error.
-2.  Open the batch in the **Journal Entry** application.
-3.  Review the transactions to identify the lines causing the imbalance.
-4.  Correct the journal entry lines so that the total debits and credits are equal and the difference amount is zero.
-5.  Save the changes and resubmit the batch for posting.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT C,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,26680.0,2463,357,6685,0.1036,0.2688,2,5,1,5,5,0,2,4,"The AI correctly identifies the root cause of the access denied error. However, it deviates significantly from the 'Golden Answer' and 'EXPECTED ACTION: PROVIDE_SOLUTION' by asking the user for confirmation to create a ticket, rather than proactively stating that the request has been initiated and providing the next steps. The Ground Truth directly states 'I have initiated a request...', which is the expected solution. The AI's response is reactive and requires user input for the next step, making it less actionable and incorrect in its solution delivery compared to the GT. Actionability is low because it provides no steps, only a question.","The access denied error in **Zoho** indicates your user profile does not have the necessary permissions to view tickets for the **DC33** and **JFK** departments.
-
-This requires an administrator to update your account's department access settings. Please confirm if you would like me to create a ticket to have our **Zoho** administrators grant you the required access.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT C,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,23851.0,2708,433,6658,0.1278,0.2343,1,1,3,5,5,5,2,5,"The AI's solution deviates significantly from the ground truth. The user's query implies retirees *should* be on the HMO plan but with a 'Retired' status, not 'Active'. The ground truth correctly addresses this by instructing to change the status to 'Retired' and verify the retirement effective date. The AI, however, suggests 'terminating the incorrect plan enrollment,' which would remove the retirees from the HMO plan entirely, potentially misinterpreting the user's intent. Additionally, the AI introduces the idea of enrollment in a PPO plan, which is not present in the ground truth and constitutes a hallucination. The AI also misses the escalation path provided in the ground truth.","Hi Tester,
-
-This issue typically occurs when a retiree's **HMO plan** enrollment has not been properly terminated in the system, causing them to remain on the active eligibility file. This can happen if they are also enrolled in another plan, such as a **PPO**.
-
-To resolve this, you must manually terminate the incorrect plan.
-
-1.  Navigate to the member's record.
-2.  Go to their plan enrollment section.
-3.  Locate the active **HMO plan** that should be inactive.
-4.  Select the option to terminate the plan enrollment, ensuring you use the correct end date.
-
-After the plan is terminated, the member will be correctly excluded from the next eligibility file generation.",Sources: ['zoho_archive']
-PROMPT C,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,26918.0,2721,437,6851,0.0271,0.225,3,2,5,5,4,0,5,5,"The AI's response offers a plausible workaround (using a space or a 'blank' UDC code) for the user's issue. However, it deviates from the ground truth's root cause analysis and solution, which focuses on disabling a mandatory field requirement via UDC Maintenance. While the AI's steps are actionable and well-formatted, they are not faithful to the provided ground truth's more comprehensive fix. The correctness is moderate because the AI's solution might work in some scenarios but doesn't address the underlying system configuration issue identified by the ground truth. Ambiguity handling is decent as it provides general steps, but the ground truth's approach of asking for the field name if the initial fix fails is more robust.","The field likely requires a value from a **User Defined Code (UDC)** list and does not permit a truly empty entry for data integrity reasons.
-
-1.  Enter a single space in the field and attempt to save. A space is often configured as the code for a blank value.
-2.  If a space does not work, use the search or visual assist function next to the field to view the list of all valid codes.
-3.  Select the code from the list that has a description of ""Blank,"" ""N/A,"" or ""Not Applicable"" to populate the field.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT C,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,16680.0,2506,278,4648,0.0476,0.2254,0,0,0,4,5,5,0,3,"The AI completely failed to provide the process for closing the Daiwa fiscal year-end, stating that IT support does not have the procedure. The ground truth explicitly provides the multi-step process, making the AI's response incorrect and unfaithful. It deflected the user to the Finance department instead of providing the solution.","The Daiwa fiscal year-end close is a business process owned by the Finance department. IT support does not have the procedure for this activity.
-
-1.  Please contact the **Finance** department for the official procedure and guidance on the fiscal year-end closing process.
-2.  If you encounter a specific technical error while using a financial application during this process, please provide the application name and error message so we can assist.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT C,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,20470.0,2728,393,6333,0.0406,0.2222,1,1,3,4,5,5,5,5,"The AI's response deviates significantly from the Ground Truth and KB. It specifies particular individuals (Ashok Chinthala, Debiprasad Mohanty) not mentioned in the KB or Ground Truth, instead of the 'Data Management team'. It instructs to 'Forward the original request from the client' rather than 'Submit a Termination Request' as per the Ground Truth, and critically omits the requirement to specify the 'Effective Removal Date'. The bolding style also differs from the Ground Truth. While it provides numbered steps, the content of these steps is incorrect and incomplete, leading to low correctness and faithfulness scores.","The process to remove a member from the eligibility file requires a manual data update by our team.
-
-1.  Forward the original request from the client in an email.
-2.  Address the email to **Ashok Chinthala** (achinthala@pcbapps.com) and **Debiprasad Mohanty** (mdebiprasad@pcbapps.com).
-3.  Ensure the forwarded request includes all necessary member-identifying information for the removal.",Sources: ['zoho_archive']
-PROMPT C,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,22398.0,2484,287,5836,0.0178,0.2308,4,5,5,3,5,0,5,5,"The AI correctly identified the need for clarification and provided numbered steps. However, it missed one specific detail requested in the ground truth ('when the issue started') and added another ('steps taken before the problem started') not explicitly in the ground truth's specific requests. It also failed to adhere to the bolding instruction present in the ground truth's format example.","To resolve this issue, I require more specific information about the problem.
+1. Completely close **Outlook**.
+2. Open **Credential Manager** (search for it in the Windows Start menu).
+3. Under **Windows Credentials**, delete any entries that contain **MicrosoftOffice16**, **pcbapps**, or **outlook.office365.com**.
+4. Restart your computer.
+5. Re-open **Outlook** and enter your password when prompted, then approve the MFA request.
+
+If the error persists after this, reply with the exact result (including any new error codes) so I can check the backend connection status.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT C,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,17103.0,2690,373,5941,0.0972,0.3462,0.893,4,5,3,4,5,5,4,4,"The AI's response is correct and provides a valid solution. It is faithful to the ground truth's core steps and explanation. However, it lacks some of the specific detail and polish found in the ground truth, such as explicitly mentioning 'Debits and Credits' for verification, the specific 'Repost' action, the initial empathetic acknowledgment, and the concluding sentence about next steps if the error persists. The bolding is also not as comprehensive as the ground truth. This reduces its score slightly in actionability, format adherence, and empathy.","The batch is in an error state because it contains unposted or unbalanced entries, which prevents it from posting correctly.
+
+1.  Navigate to the **Batch Review** screen.
+2.  Locate the specific batch with the **Error** status.
+3.  Review the batch and **Delete** any unposted or erroneous lines within it.
+4.  Verify the **Difference Amount** is now zero.
+5.  Post the batch again.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT C,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,20151.0,2604,364,6018,0.2567,0.322,0.9101,2,3,2,4,5,5,5,4,"The AI correctly identifies the root cause and states that an admin request has been initiated. However, it fails to provide the user with the necessary steps (log out, clear cache, verify) outlined in the ground truth. Furthermore, it explicitly states 'No further action is needed from you at this time,' which directly contradicts the ground truth's instructions for the user, significantly impacting correctness and actionability. The formatting is good regarding flow and bolding, but it misses the numbered steps for user instructions.","The ""access denied"" error is occurring because your user profile in **Zoho Desk** does not have the required **Department-Level visibility** for the restricted **DC33** and **JFK** service queues.
+
+This issue requires administrator intervention to resolve. I have submitted a request to a **System Administrator** to grant your account the necessary permissions for the **DC33** and **JFK** departments. You will be notified once this change is complete. No further action is needed from you at this time.","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT C,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,16037.0,2717,339,5404,0.1822,0.3776,0.9072,4,5,4,4,5,5,4,5,"The AI provides a correct and actionable set of steps, accurately identifying the common causes of the issue, which aligns well with the ground truth. However, it omits the important follow-up instruction from the ground truth regarding what to do if the issue persists after applying the steps. There are also minor discrepancies in bolding compared to the ground truth.","This issue typically occurs when retirement termination dates are missing or there is a synchronization delay between HR records and the insurance files.
+
+1.  Open the **Benefit Administration** system.
+2.  Locate the specific retiree's record.
+3.  Manually change the status field from **Active** to **Retired**.
+4.  Verify the **HMO Plan** line item has the correct retirement effective date.
+5.  Generate a new **Eligibility File** to confirm the change.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT C,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,21035.0,2927,371,6704,0.2701,0.5093,0.9142,3,4,3,4,5,5,1,5,"The AI correctly identified the root cause and provided the main steps from the ground truth. However, it critically missed the escalation path provided in the ground truth ('If the system still prompts for a value, please share the exact field name so we can adjust the backend database constraints.'). This omission significantly impacts the completeness of the solution, making it less actionable if the initial steps fail, and directly failing the escalation logic metric. Minor differences in bolding and the omission of 'N/A' in step 2 are less impactful.","The system is preventing a blank value because a **UDC (User Defined Code)** rule has marked the field as mandatory.
+
+1.  Navigate to the **UDC Maintenance** screen for the specific field in question.
+2.  In the validation table, check if a **Blank** row is permitted.
+3.  Apply the system fix to disable the mandatory field requirement for the affected module.
+4.  Refresh the **Address Book** and save the record with the blank value.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT C,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19432.0,2595,313,5161,0.0316,0.217,0.8531,1,2,1,4,5,5,1,4,"The AI failed to provide the requested process steps, which were available in the ground truth. Instead, it escalated the request by suggesting creating a ticket, implying it could not provide the guidance itself. The ground truth clearly outlines the steps for the Daiwa fiscal year-end close. While it correctly identified the 'Finance Systems support team' from the KB, it incorrectly concluded it couldn't provide the solution directly.","The Daiwa fiscal year-end close is a specialized financial process that requires specific permissions and expertise. This procedure is managed by the dedicated Finance Systems support team.
+
+I will need to route this request to that team, as they are the only ones authorized to provide guidance and support for this process. Please confirm if you would like me to create and route a ticket to them on your behalf.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT C,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,21376.0,2859,400,6464,0.0602,0.274,0.8597,2,1,3,3,5,5,5,4,"The AI's response introduces specific individual names and email addresses (Ashok Chinthala, Debiprasad Mohanty) that are not present in the provided ground truth, which is a significant hallucination/ungrounded detail. It also misses key details specified in the ground truth, such as 'Member ID', 'Termination Request', and 'Effective Removal Date', making its instructions less precise and less correct. While it provides numbered steps and a professional tone, the core inaccuracies and ungrounded information severely impact its quality.","Requests to remove a member from an eligibility file are handled by our data team after receiving a formal request from the client.
+
+1.  The client must send an email request to the designated PCB Apps contacts, such as **Ashok Chinthala** (`achinthala@pcbapps.com`) and **Debiprasad Mohanty** (`mdebiprasad@pcbapps.com`).
+2.  The email must contain the specific details of the member to be removed from the file.
+3.  Our team will then process the removal. A confirmation may be requested before the final deletion is performed in the system.",Sources: ['zoho_archive']
+PROMPT C,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,21046.0,2538,287,5977,0.0474,0.2727,0.8935,4,5,4,3,5,5,5,4,"The AI correctly identified the need to clarify the vague query and provided relevant questions in a numbered list. It missed some details present in the ground truth, such as asking 'when the issue started' and explicitly stating the escalation path after receiving details. The formatting had minor inconsistencies, including the 'Hi Tester' salutation and inconsistent bolding compared to the ground truth's emphasis.","Hi Tester,
+
+To diagnose the system issue, I need more specific information. Please provide the following details:
+
+1.  Which application or system is not working correctly?
+2.  What is the specific problem or unexpected behavior you are experiencing?
+3.  Please provide the full text of any **error messages** you are seeing, or a screenshot of the issue.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT C,Gemini 2.5 Pro,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,24201.0,2984,460,7384,0.1501,0.2328,0.8759,0,0,0,0,0,0,0,0,Judge Failed,"The error `0x80040115` indicates Outlook cannot connect to the server. This is typically caused by outdated cached credentials or a corrupted Outlook profile.
+
+First, try clearing the credential cache:
+1.  Close **Outlook** and all other Office applications.
+2.  Open the **Control Panel**.
+3.  Navigate to **Credential Manager** > **Windows Credentials**.
+4.  Under the **Generic Credentials** section, locate all entries starting with **MicrosoftOffice16**.
+5.  Click to expand each entry and select **Remove**.
+6.  Restart **Outlook**. You will be prompted to sign in again. Approve the multi-factor authentication request.
+
+If the issue persists after clearing credentials, your Outlook profile may be corrupt. Create a new one:
+1.  Close **Outlook**.
+2.  Open the **Control Panel** and select **Mail (Microsoft Outlook)**.
+3.  In the Mail Setup dialog box, click **Show Profiles**.
+4.  Click **Add**, enter a name for the new profile (e.g., ""New Profile""), and click **OK**.
+5.  Follow the on-screen prompts to add your email account. It should configure automatically.
+6.  Once the new profile is set up, return to the **Mail** dialog box. Select **Always use this profile** and choose the new profile you just created from the dropdown menu.
+7.  Click **OK** and launch **Outlook**. It will now use the new profile.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT C,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,12895.0,2856,379,7063,0.1368,0.3184,0.8997,5,5,5,5,5,5,5,5,"The AI's response correctly identifies the problem and provides clear, actionable steps that align with the ground truth. It also includes an excellent additional troubleshooting step regarding 'Record Locked' messages, which was mentioned as a potential cause in the ground truth's explanation. The formatting is correct with numbered steps and appropriate bolding. The tone is professional and helpful.","Hi Tester,
+
+This error occurs because the JE batch contains unbalanced or unposted entries, resulting in a non-zero difference amount that blocks posting during end-of-month processing.
+
+1. Navigate to the **Batch Review** screen.
+2. Locate the specific batch showing **Error** status.
+3. Identify and **Delete** any unposted entries or erroneous lines within that batch.
+4. Verify the **Difference Amount** is now zero.
+5. Post the batch again.
+
+If the error persists after clearing the lines, check the Work Center for any ""Record Locked"" messages and have the user holding the record exit their session before retrying.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT C,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,11957.0,2706,342,6665,0.1603,0.4,0.9127,5,5,5,5,5,5,5,5,"The AI's response perfectly identifies the cause of the issue and provides clear, actionable steps that align almost identically with the ground truth. The formatting is correct, and the tone is professional and helpful. The slight rephrasing of the admin request and notification is a minor stylistic difference that does not detract from the quality or correctness of the response.","Hi Tester,
+
+This is occurring because your Zoho Desk role profile lacks the required department-level visibility for the restricted DC33 and JFK queues.
+
+1. Log out of **Zoho Desk**.
+2. Clear your browser cache and cookies.
+3. I will submit the update request to the System Administrator to add **DC33** and **JFK** permissions to your account.
+4. Once notified that the change is complete, log back in and test ticket access.","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT C,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,13147.0,2789,258,7464,0.1385,0.3784,0.9126,0,0,0,0,0,0,0,0,Judge Failed,"The retirees are showing as active on the HMO eligibility file due to missing retirement termination dates or HR synchronization delays.
+
+1. Open **Benefit Administration**.
+2. Locate the specific retiree record.
+3. Change the status field from **Active** to **Retired**.
+4. Verify the **HMO Plan** line has the correct retirement effective date.
+5. Generate a new **Eligibility File**.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT C,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,13487.0,2930,362,7514,0.2515,0.5047,0.913,3,5,3,5,4,5,3,4,"The AI's response correctly identifies the cause and provides the initial steps from the ground truth. However, it omits a crucial part of the ground truth: the instruction to share the exact field name if the initial steps do not resolve the issue. This omission makes the solution incomplete, impacting correctness, actionability, and the comprehensive escalation logic provided in the ground truth. The formatting and faithfulness are excellent, and the tone is good, though slightly less empathetic in its opening than the ground truth.","The **Address Book** is preventing a blank value due to a **UDC** validation rule enforcing the field as mandatory.
+
+1. Navigate to the **UDC Maintenance** screen for the specific field.
+2. Check the validation table to see if a **Blank** row is permitted.
+3. Apply the system fix to disable the mandatory field requirement for the affected module.
+4. Refresh the **Address Book** and save the record with the blank value.","Sources: ['zoho_ticket', 'zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT C,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19009.0,2848,465,8644,0.1406,0.216,0.8776,2,2,3,3,5,5,4,4,"The AI's response provides a plausible set of steps, but they do not align with the specific steps outlined in the ground truth. For example, the ground truth explicitly mentions 'Finalize and Post manual journal entries' and 'Run the General Ledger Trial Balance,' which are missing from the AI's response. The AI seems to have generated its own procedural steps rather than strictly adhering to the provided ground truth. This impacts correctness and faithfulness significantly. While the steps are actionable, they are not the *correct* steps according to the ground truth. The bolding also differs from the ground truth's emphasis. The escalation logic is acceptable as it provides a solution, but it misses the ground truth's suggestion of a specialist walkthrough.","Hi Tester,
+The Daiwa fiscal year-end close must occur now because the fiscal period has ended and all transactions need finalization to lock the books, generate accurate reports, and prevent further postings into the prior year. 
+1. Log in to the **Daiwa Financial System**.
+2. Go to **Finance > Period End > Year-End Close**.
+3. Run the **Preliminary Close** report to flag any open items or errors.
+4. Clear all pending transactions, reconciliations, and adjustments flagged in the report.
+5. Return to **Year-End Close** and select **Final Close**.
+6. Verify the status shows **Closed** on the **System Dashboard** and export the **Year-End Financial Reports** for finance review.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT C,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,16122.0,2870,396,6929,0.0636,0.2533,0.8766,1,1,2,4,4,5,1,4,"The AI's response provides a completely different and incorrect process for removing a member from the eligibility file. The ground truth clearly states that this must be done via a formal request to the **Data Management team**, whereas the AI suggests direct action within a system called 'MemberPlus'. This is a critical factual error, making the response unhelpful and potentially misleading. Therefore, correctness, faithfulness, and escalation logic are rated low. Actionability is rated 2 because while the steps are clear, they are for an incorrect process.","Removing a member from the eligibility file is typically due to status changes or corrections and is processed via an update in **MemberPlus** to exclude them from future files.
 
-Please provide the following details:
-1.  The name of the application or system where the issue is occurring.
-2.  The specific steps you were taking before the problem started.
-3.  The full text of any error message that appeared. A screenshot of the error on your screen would be most helpful.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT C,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,25228.0,2850,310,7638,0.0526,0.2568,0,0,0,0,0,0,0,0,Judge Failed,"The JE batch error with difference amount during end of month posting is typically caused by out-of-balance debits and credits or a locked record in JDE.
+1. Log in to **MemberPlus**.
+2. Navigate to **Eligibility** > **Member Search**.
+3. Enter the member's name or ID and locate the record.
+4. Open the member profile and select **Take Off Eligibility**.
+5. Enter the effective date, reason for removal, and any supporting notes.
+6. Click **Save** and verify the change in the next eligibility file export.
 
-1. Open **Work Center** in **JDE** and review the error details for this batch.
-2. Confirm if it shows 'Poster Out of Balance' matching the difference amount.
-3. If record locked, ask the user holding it to fully exit their **JDE** session.
-4. Open the batch, review journal lines for mismatches, delete or correct the unbalanced entries.
-5. Save changes then repost the batch using the standard posting process. 
+Provide the specific member details if this does not match your process.",Sources: ['zoho_archive']
+PROMPT C,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,12410.0,2660,412,7612,0.0092,0.1608,0.8609,1,1,2,5,1,5,1,3,"The user's query is extremely vague. The GROUND TRUTH correctly identifies the need for clarification first and explicitly states that an accurate troubleshooting path cannot be provided without more details. The EXPECTED ACTION is CLARIFY. The AI's response, however, immediately provides troubleshooting steps (closing browser tabs, clearing cache, restarting) before obtaining any specific information about the issue. This directly contradicts the GROUND TRUTH's strategy of clarifying first. While the AI does ask for clarification in its final step, it prioritizes providing a potential solution over gathering necessary information, which is incorrect for this vague query. The troubleshooting steps are not grounded in the provided KB for such a generic issue, indicating a lack of faithfulness. The escalation logic is incorrect as it attempts to solve before clarifying.","The issue description is too vague to identify a specific cause, which is commonly a session timeout, network glitch, or cached error in enterprise systems. 
 
-If the error persists after correction, provide the exact error text from Work Center.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT C,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,24436.0,2578,383,6846,0.0993,0.2157,2,2,3,5,5,5,1,3,"The AI correctly identifies the cause of the issue (lack of permissions). However, its proposed solution deviates significantly from the ground truth. The ground truth states that the AI has *already initiated* a request to the System Administrator and provides steps for the user to verify *after* the admin update. The AI's response, instead, provides troubleshooting steps for the user to perform first, and only then mentions that an admin update would be required if those steps fail. This is a failure in faithfulness to the prescribed solution and escalation logic, as the AI does not proactively take the administrative action as per the ground truth.","Your **Zoho** login lacks permissions for DC33 and JFK tickets, caused by incomplete role or group assignment in the backend.
+1. Close all **PCB Apps** browser tabs and sign out completely from **Okta**.
+2. Clear browser cache and cookies, then restart your computer.
+3. Log back in and test the affected system or application.
+4. Reply with the exact error message, which application or drive is impacted, and what you were doing when it occurred.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT C,Grok 4.20 Reasoning,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,14477.0,2774,392,7209,0.1464,0.2358,0.8824,2,1,4,5,3,5,2,5,"The AI correctly identified the error code from the (implied) screenshot and maintained a good tone and format. However, its proposed solution (Credential Manager) completely deviates from the ground truth's recommended solution for error 0x80040115, which is to rename the OST file due to corruption. This makes the response unfaithful to the provided ground truth and less correct for the specific error cause identified by the GT. The escalation logic also differs; the GT offers to create a ticket for RPC settings, while the AI asks for more information about the user's location.","This is an Outlook connection failure (error **0x80040115**) to the Exchange server, typically caused by stale credentials or a transient network/Intune sync issue.
 
-1. Sign out of **Zoho Desk** completely.
-2. Clear browser cache and cookies for zoho.com.
-3. Log back in and navigate to **Tickets** > **All Tickets** to test.
-4. Switch to a different browser or incognito mode and retry access.
+1. Close **Outlook** completely using Task Manager if needed.
+2. Open **Control Panel** > **Credential Manager**.
+3. Remove all entries containing **MicrosoftOffice16**, **pcbapps.com**, or **Outlook**.
+4. Reopen **Outlook**, enter your password when prompted, and approve the MFA prompt.
+5. If still failing, restart your computer and test again while connected to the company network or VPN.
 
-If access is still denied, this requires admin update to your **Zoho** roles for those accounts.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT C,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,23464.0,2665,419,7759,0.0605,0.2551,4,4,5,5,5,5,4,5,"The AI provides clear, actionable, numbered steps that effectively address the user's query. The terminology used ('Terminated' for plan status vs. 'Retired' in GT) is a minor semantic difference, as 'Terminated' is often the correct system status for a plan when coverage ends, even if the individual is retired. The AI's steps are more detailed and specific than the ground truth in some areas, enhancing actionability. The main deviation from the ground truth is the lack of an explicit escalation path if the issue persists after following the steps.","Hi Tester,
-This happens because the HMO termination record for retirees was not fully processed in the eligibility system, so the export continues to flag them as active even after retirement.
+If the error continues after these steps, reply with whether you are in the office or remote.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT D,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,20265.0,2862,473,6299,0.1799,0.3648,0.9028,3,5,3,5,5,5,5,5,"The AI's response is mostly correct and well-formatted, explaining the issue and providing clear steps. However, it misses a crucial final step from the ground truth: explicitly instructing the user to 'Repost' the batch after making corrections. The AI states 'you should be able to post the batch successfully' but doesn't provide the specific action, which significantly impacts the actionability and completeness of the solution.","Hi Tester,
 
-1. Log into **Benefits Admin** and navigate to **Member Management > Eligibility**.
-2. Search by **P/N** or retiree name and open the record.
-3. Set **Plan Status** to **Terminated** for the HMO plan, enter the correct **effective termination date**, and click **Save**.
-4. Go to **Reports > Eligibility File** and click **Generate File** to produce an updated export.
-5. Download and verify the new file no longer lists the retirees as active.
+Thank you for contacting PCB Support.
 
-If multiple members are affected, apply the same update in batch mode before regenerating.",Sources: ['zoho_archive']
-PROMPT C,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,16742.0,2746,367,7828,0.1143,0.2353,1,1,3,4,5,5,2,4,"The AI's response deviates significantly from the Ground Truth. It suggests a workaround (entering a space) and a different configuration path ('System Setup > Address Book > Field Properties') which are not mentioned in the Ground Truth. The Ground Truth specifically points to 'UDC Maintenance' and applying a 'system fix' to disable mandatory requirements. Therefore, the AI's solution is not correct or faithful to the provided knowledge.","The address book prevents blank values due to mandatory field validation in the configuration. 
+This type of error during month-end reporting typically occurs when a Journal Entry batch becomes unbalanced. This can happen if there are unposted entries or erroneous lines within the batch, or sometimes if a specific record is temporarily locked by another user or process.
 
-1. Open the record in **Address Book**.
-2. Click **Edit** on the affected entry.
-3. For the specific field, enter a single space character as a workaround to satisfy validation.
-4. If this is a custom or UDC-linked field, navigate to **System Setup** > **Address Book** > **Field Properties**, uncheck **Required**, and select **Allow Blank**.
-5. Click **Save** and test adding the blank value again.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT C,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19978.0,2738,368,9445,0.1078,0.1935,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
-The Daiwa fiscal year-end close must occur now to lock all transactions for accurate financial reporting and compliance before the new period opens, which is why the business flagged these two weeks as critical. 
-1. Log into the **Finance System**.
-2. Navigate to **Reports > Reconciliation** and run the full account reconciliation to confirm all entries are posted.
-3. Go to **Administration > Fiscal Close** and select **Daiwa** as the entity.
-4. Click **Close Fiscal Year**, review the validation summary, then select **Confirm Close**.
-5. Export the final **Year-End Reports** from the **Reports** menu and send them to the finance distribution list for sign-off.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT C,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,13285.0,2703,353,7077,0.0947,0.2703,0,0,2,4,5,5,2,4,"The AI's response is incorrect and unfaithful to the ground truth. The ground truth explicitly states that member removals require a formal request to the 'Data Management team', while the AI hallucinates a process involving a 'PCB Portal' and self-service removal. This fundamental error makes the solution provided by the AI completely wrong and misleading. While the format is decent and tone is professional, the core information is incorrect, leading to low scores for correctness, faithfulness, and actionability.","To remove a member from the eligibility file, this is processed as a standard status update request, typically due to changed eligibility or file correction needs.
+You can usually resolve this by reviewing the batch and removing the problematic entries. Please try the following steps:
 
-1. Log into the **PCB Portal**.
-2. Go to **Eligibility > Member Search**.
-3. Enter the member ID or name and locate the record.
-4. Select the record then click **Remove from File**.
-5. Enter the removal reason and effective date.
-6. Click **Submit** to queue the update for the next eligibility file generation.
+1.  Navigate to the **Batch Review** screen.
+2.  Locate the specific batch that is showing an **Error** status.
+3.  Inside the batch, carefully identify any unposted or incorrect lines that are causing the imbalance.
+4.  Select and **Delete** those specific lines.
+5.  Once the lines are deleted, please verify that the **Difference Amount** for the batch is now zero.
 
-Provide the specific member details if the option is unavailable in the portal.",Sources: ['zoho_archive']
-PROMPT C,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,14253.0,2557,355,6833,0.0097,0.1283,0,0,2,3,0,0,0,3,"The user query is highly ambiguous ('Something is broken in the system'). The ground truth explicitly states that clarification is needed before providing troubleshooting steps. The AI, however, assumes a specific problem (cached data, session timeout) and provides troubleshooting steps for that assumed problem, completely bypassing the necessary clarification. This makes the response incorrect, unfaithful to the ground truth, and fails to handle the ambiguity appropriately. The escalation logic should have been CLARIFY, but the AI attempted to SOLVE.","System error likely from cached data or session timeout in the enterprise app. 
+After the difference amount is zero, you should be able to post the batch successfully. If the error persists after these steps, or if you are unable to identify the incorrect entries, please let me know.
 
-1. Log out of the **system** completely.
-2. Clear browser cache using **Ctrl + Shift + Delete**, select **Cached images and files**, then **Clear data**.
-3. Close and reopen the browser, then log back in.
-4. Test in **Incognito mode** with **Ctrl + Shift + N**.
-5. If unresolved, note the exact error message or screenshot for next steps.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT D,Gemini 2.5 Pro,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,21918.0,2946,521,6428,0.0843,0.2715,4,5,4,5,5,5,5,5,"The AI's response is largely correct and follows the requested format and tone. However, some steps are less specific than the ground truth. For example, the ground truth explicitly mentions 'delete any Unposted Entries' and 'click Repost', while the AI says 'Correct the transactions' and 'attempt to post the batch again'. While the AI's steps would likely lead to a resolution, the ground truth provides more precise actions.","Hi Tester,
+Best regards,
+PCB Support AI","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT D,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,22200.0,2790,534,6574,0.208,0.2577,0.892,3,5,3,4,5,5,2,5,"The AI correctly identifies the cause of the issue and provides the initial troubleshooting step (clear cache). However, it deviates significantly from the ground truth's proactive approach to resolution. The ground truth states that an admin request has *already been initiated*, whereas the AI makes this critical step conditional on the user trying the first step and reporting back. This delays the full resolution and makes the overall solution less actionable and complete than the ground truth. The expected action was PROVIDE_SOLUTION, but the AI's response is more akin to a diagnostic step followed by a conditional offer to escalate, rather than a full solution.","Hi Tester,
 
-Thank you for reaching out. I can certainly help with this.
+Thank you for reaching out. I can certainly help with this access issue in **Zoho Desk**.
 
-The ""Error"" status with a difference amount on a JE batch is a standard safety feature within the system. It indicates that the total debits and total credits within the batch do not equal each other, and the system has correctly stopped the batch from posting to prevent an imbalance in the general ledger.
+This type of ""access denied"" error typically occurs when an account doesn't have the specific permissions required to view tickets within restricted departments. Access to queues like **DC33** and **JFK** is controlled by **Department-Level visibility** settings that need to be explicitly granted to a user's profile. This is a common security configuration and not an error with your login itself.
 
-Here are the steps to identify and correct the issue:
+Let's try one initial step, and then I can explain the next required action.
 
-1.  Please go to the **Work Center** to review the detailed error messages associated with your batch job. You will likely find a specific message like '**Poster Out of Balance**'.
-2.  Open the batch in question and review the journal entry lines. The difference amount you noted is the exact amount the batch is out of balance by, which should help you locate the incorrect entry or entries.
-3.  Correct the transactions so the total debits and credits are equal and the batch is balanced.
-4.  Once you have corrected the data, you can attempt to post the batch again.
+1.  Please completely log out of **Zoho Desk**. Then, clear your browser's cache and cookies before logging back in to see if the issue is resolved. This ensures you are starting a completely fresh session.
 
-This is typically a data entry issue that can be resolved by correcting the batch. If you have confirmed the batch is balanced but it still fails to post, please let me know, and we can investigate further.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT D,Gemini 2.5 Pro,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,28323.0,2659,517,6736,0.0771,0.2741,2,4,1,4,1,0,1,5,"The AI correctly identifies the root cause (permissions) but deviates significantly from the Ground Truth's solution. It incorrectly states there are no troubleshooting steps for the user (GT includes clearing cache). Instead of directly initiating the request to the administrator as per the GT, the AI asks for clarification ('have you been able to access these tickets in the past?') and proposes creating a ticket, which is a different action flow than the expected 'PROVIDE_SOLUTION' that includes the AI's direct action. This makes the response less actionable and introduces unnecessary clarification for a non-ambiguous query. Bolding for department names was also missed.","Hi Tester,
+If you still cannot access the tickets after trying that, your account will need to have its permissions updated by a system administrator. This is a backend change that I can facilitate for you.
 
-Thank you for reaching out. I understand you're getting an ""access denied"" error when trying to view tickets for the DC33 or JFK departments in **Zoho**.
+Please let me know if the first step doesn't work, and I will create a ticket to have the necessary permissions for the **DC33** and **JFK** departments added to your account.","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT D,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,20840.0,2876,483,6671,0.2001,0.3322,0.907,5,5,5,5,5,5,5,5,"The AI's response is excellent. It correctly identifies the issue, provides clear, actionable, numbered steps that align perfectly with the ground truth, and maintains a professional and empathetic tone. It adheres to all formatting requirements (natural flow, no headers, correct bolding). Furthermore, it proactively addresses a potential blocker (permissions) and offers a relevant escalation path, which enhances its helpfulness beyond the ground truth's explicit instructions. The explanation of the discrepancy is also accurate and helpful.","Hi Tester,
 
-This type of error typically happens when the permissions associated with your user profile don't include access to those specific ticket groups. Within **Zoho**, access is carefully managed by department to ensure data security, and it's likely your profile needs to be updated by an administrator to grant you visibility into the DC33 and JFK tickets.
+Thanks for reaching out. This issue can sometimes happen when there's a synchronization delay between the HR records and the insurance eligibility files, or if a retirement termination date is missing from the record.
 
-Because this is a permissions-based issue, it requires an administrator to make changes to your account on the backend. Unfortunately, there are no troubleshooting steps on your end that can resolve this.
+You should be able to correct this directly within the benefits system. Here are the steps to follow:
 
-To get this fixed, I will need to create a ticket for our administration team to review your profile. Before I do, could you please confirm if you have been able to access these tickets in the past? This will help the team understand if this is a new access request or a recent change to your permissions.
+1.  Open the **Benefit Administration** system.
+2.  Locate the specific retiree's record that is showing the incorrect status.
+3.  Manually adjust the status field from **Active** to **Retired**.
+4.  While in the record, please also confirm that the **HMO Plan** line item includes the correct retirement effective date.
+5.  After making these corrections, you can generate a new **Eligibility File**, and the retiree should now be listed correctly.
 
-Once you confirm, I can immediately create the ticket to get this resolved for you.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT D,Gemini 2.5 Pro,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,26921.0,2785,427,6348,0.0099,0.1712,0,1,0,5,0,0,0,5,"The AI completely failed to provide the correct solution as outlined in the ground truth. Instead of offering actionable steps to fix the issue, it incorrectly assumed the query was ambiguous and asked for a Member ID to investigate further. This goes against the expected action of 'PROVIDE_SOLUTION' and demonstrates a lack of faithfulness to the provided KB/ground truth solution.","Hi Tester,
+If you are unable to access the **Benefit Administration** system or find that you cannot edit these fields, it may be a permissions issue. Please let me know if that's the case, and I can escalate this to the appropriate team for you.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT D,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,22538.0,3032,416,6419,0.1887,0.2686,0.8811,2,2,1,4,3,5,2,4,"The AI correctly identifies the root cause (mandatory field, UDC) but fails to provide the actionable resolution steps outlined in the Ground Truth. Instead, it immediately escalates by asking for the field name to create a ticket, bypassing the initial troubleshooting/resolution steps that the Ground Truth suggests can be performed. This makes it less correct and not actionable as a solution. The Ground Truth's expected action was to PROVIDE_SOLUTION, not to immediately escalate for ticket creation.","Hi Tester,
 
-Thank you for reaching out. I can certainly help you with this issue.
+Thanks for reaching out. I understand you're unable to save a blank value in a field within the **Address Book**.
 
-This situation typically occurs when the system process that generates the eligibility file doesn't correctly recognize the terminated or inactive status for a specific group of members, in this case, retirees on the HMO plan. This can be caused by a data mismatch or an issue with how the plan's termination rules are being processed by the system.
+This issue typically occurs when a specific field is configured as mandatory by a system rule, often managed by a **UDC (User Defined Code)**. This validation rule is designed to ensure data completeness and prevents the system from accepting an empty entry for that field.
 
-To investigate this properly, I'll need to examine the record of a specific member who is being incorrectly reported as active. Could you please provide a **Member ID** or another unique identifier for one of the affected retirees?
+Adjusting this setting requires administrator access to modify the field's validation rules on the backend; it's not something that can be changed from the standard user interface.
 
-Once I have that example, I can trace their plan history and data to pinpoint why they are still appearing on the eligibility file. This will allow me to determine if this is an individual data issue or a broader processing problem that requires a backend correction for all affected members.",Sources: ['zoho_archive']
-PROMPT D,Gemini 2.5 Pro,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,29170.0,2839,432,6711,0.0904,0.2581,2,2,1,5,3,0,2,5,"The AI correctly identifies the general problem (required field) and asks for clarification, which is good ambiguity handling. However, the ground truth provides a specific solution (checking UDC settings) for this type of issue and only asks for more details if the initial steps fail. The AI should have attempted to provide the solution first as per the 'EXPECTED ACTION: PROVIDE_SOLUTION', rather than immediately asking for more information. This makes it less correct and actionable, and deviates from the ground truth's approach.","Hi Tester,
+To have this resolved, could you please tell me the exact name of the field that is not accepting the blank value? Once I have that information, I can create a ticket for our technical team to investigate and adjust the system configuration.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT D,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,20305.0,2882,501,5992,0.1255,0.2611,0.8672,1,1,1,4,5,5,1,4,"The AI incorrectly states that it does not have the documented procedures or authorization to guide users through the financial tasks, and that the process is managed directly by the Finance department. The provided KB *does* contain the specific steps for the Daiwa fiscal year-end close and explicitly states that the process is often managed by the 'Finance Systems team' and offers to schedule a walkthrough. The AI should have provided the steps from the KB as the primary solution, as indicated by the `EXPECTED ACTION: PROVIDE_SOLUTION`. Its decision to escalate by offering to create a ticket, based on a false premise (lack of documentation/authorization), is incorrect. While the tone is polite and professional, the core information provided is incorrect and unfaithful to the KB.","Hi Tester,
 
-Thanks for reaching out. I can certainly help look into this behavior with the address book.
+I understand you're looking for the process for the Daiwa fiscal year-end close.
 
-When an application doesn't allow you to save a blank value in a field, it's typically because that field has been configured as **required**. This is a common data integrity feature designed to ensure that essential information is always captured for every record, preventing incomplete entries in the system.
+The fiscal year-end close is a critical and highly sensitive financial operation. Due to the complexity and the need to ensure the integrity of financial data, this process is managed directly by the **Finance department**. These procedures are typically restricted to authorized personnel within that team who have the specific training and system permissions to execute them correctly.
 
-To help me diagnose this properly, could you please provide a bit more information?
+As IT Support, we do not have the documented procedures or the authorization to guide users through these financial tasks. This is a standard security and compliance measure to protect our company's financial records.
 
-1.  What is the exact name of the field you are trying to leave blank?
-2.  When you are on the screen, do you see a visual indicator next to the field label, such as a red asterisk (*)? This symbol is the standard way to mark a field as mandatory.
+The correct team to provide this guidance would be the **Finance Systems** support group or your leadership within the Finance department. I can create a service ticket on your behalf and route it directly to the appropriate finance team to get you the proper assistance.
 
-Once I have these details, I can confirm if this is the intended behavior. If the field is indeed required but your business needs have changed, we can then determine the appropriate next steps.","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT D,Gemini 2.5 Pro,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,19974.0,2718,389,5691,0.0291,0.2327,1,1,1,5,5,5,1,4,"The AI fails to provide the requested steps for the Daiwa fiscal year-end close, which are explicitly given in the ground truth. Instead, it incorrectly states that the process is restricted and not available, and opts to escalate by creating a ticket. This directly contradicts the 'PROVIDE_SOLUTION' expected action and the content of the ground truth. While the tone is good, the core task of providing the solution is missed.","Hi Tester,
+Please let me know if you would like me to create and assign that ticket for you.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT D,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,25173.0,2963,541,7006,0.1506,0.2897,0.889,2,2,2,4,5,5,2,5,"The AI's response is partially correct but deviates significantly from the ground truth. It correctly identifies the need for a formal request and the member's full name and ID. However, it fails to mention the 'Data Management team' as the recipient of the request, instead vaguely referring to 'our backend team' or 'our team'. It also omits crucial details like the 'Effective Removal Date' and the 'confirmation receipt' step. Most importantly, it shifts from providing a solution for the user to execute (as per the ground truth) to offering to create a service request ticket on the user's behalf, which is not the standard process described. This makes the actionability low as the user cannot fully follow the process independently based on the AI's response. The escalation logic is incorrect because the expected action was to provide a solution for the user to follow, not to offer to create a ticket.","Hi Tester,
 
-Thanks for reaching out. I understand you need the process for the Daiwa fiscal year-end close.
+I understand you need to remove a member from the eligibility file.
 
-This is a critical and specialized business process that is typically performed by a designated team within the Finance department or a dedicated application support group. Due to the need for specific permissions and to ensure the integrity of the financial data, this process is restricted and not available as a standard user-facing procedure.
+Changes to the **eligibility file**, such as removing a member, are handled directly by our backend team. This is a controlled process to ensure data integrity across our systems and prevent any unintended impact on member benefits.
 
-I can create a service request ticket on your behalf and assign it directly to the application support team responsible for the Daiwa financial system. They will have the correct procedures and permissions to assist you with the year-end close.
+To have a member removed, a formal request needs to be submitted. Here is the standard process:
 
-Please let me know if you would like me to proceed with creating and routing this ticket for you.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT D,Gemini 2.5 Pro,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,24980.0,2836,536,6793,0.0673,0.2625,3,4,5,5,5,5,5,5,"The AI's response is mostly correct and actionable, providing clear steps to contact the data management team. However, it misses a crucial detail from the ground truth: specifying the 'Effective Removal Date' in the request. This is a significant omission for eligibility changes. While the AI suggests an email, the ground truth refers to a 'Termination Request,' which might imply a more formal process. The AI also adds 'SSN' as an alternative identifier, which wasn't explicitly in the ground truth's required details. These deviations reduce its correctness and faithfulness scores slightly.","Hi Tester,
+1.  Please gather the key identifying information for the member you wish to remove. To ensure we target the correct record, we will need their **Full Name** and **Member ID**.
+2.  Once you have the details, the request can be submitted to our team for processing.
 
-I can certainly clarify the process for you.
+This is not a function available through the user interface and requires our team to perform the update on the backend.
 
-Changes to the eligibility file, such as removing a member, are handled by our backend data management team. This is a controlled process to ensure the integrity and accuracy of the data, as it directly impacts member benefits and status. This is not a function that can be performed through a self-service portal.
+If you provide the member's details here, I would be happy to create the service request ticket on your behalf to begin the process.",Sources: ['zoho_archive']
+PROMPT D,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,21367.0,2662,415,5828,0.1285,0.2479,0.8857,5,5,5,4,5,5,5,5,"The AI correctly identified the need for clarification due to the vague query. It asked relevant and actionable questions that align very well with the ground truth's requirements, covering application, error messages, and screenshots. The tone is empathetic and professional. The only minor deviation from the ground truth is the lack of specific bolding for keywords like 'Application' and 'Error Message' as suggested in the ground truth, which slightly impacts format adherence but not the overall quality or correctness of the response.","Hi Tester,
 
-To have a member removed, please follow this procedure:
+I'm sorry to hear you're running into an issue. I can certainly help investigate what's going on.
 
-1.  Compose an email to the designated data management team responsible for this file.
-2.  In the subject line, please state the request clearly, for example: ""Request to Remove Member from Eligibility File"".
-3.  In the body of the email, you must include the following details to prevent errors:
-    *   The member's unique identifier (e.g., **Member ID** or **SSN**).
-    *   The member's **Full Name**.
-    *   A clear statement confirming the action to be taken (e.g., ""Please remove this member from the active eligibility file"").
+To help me diagnose this, I'll need a little more information about what you were experiencing, as ""the system"" can refer to many different applications and services here at PCB Apps.
 
-Once the team receives the request with the necessary information, they will process the removal and confirm with you once it is complete.
+Could you please provide a few more details?
 
-Let me know if you have any other questions.",Sources: ['zoho_archive']
-PROMPT D,Gemini 2.5 Pro,ZT-007,Something is broken in the system.,19528.0,2582,374,5469,0.1244,0.2832,4,5,5,4,5,5,5,5,"The AI correctly identified the vague query and asked for clarification. The questions asked are relevant and actionable, though slightly different from the ground truth (e.g., missing 'when the issue started' but adding 'what task were you trying to complete'). The format adheres well, except for the lack of bolding on key terms as seen in the ground truth. The tone is empathetic and professional.","Hi Tester,
+1.  Which application, website, or shared drive were you using when the problem occurred?
+2.  What was the specific task you were trying to perform?
+3.  Did you see an error message? If so, could you please tell me what it said, or provide a screenshot of the error?
 
-I'm sorry to hear you're running into an issue with the system. I can certainly help investigate what's going on.
+Once I have these details, I can provide more specific troubleshooting steps.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT D,Gemini 2.5 Pro,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,18269.0,3030,529,6025,0.1293,0.1984,0.8718,2,1,4,4,4,4,2,4,"The AI correctly identified the error code from the (simulated) screenshot. However, the proposed solution (clearing cached credentials) is different from the ground truth's solution (renaming the OST file) for this specific error. The ground truth explicitly states the cause as a synchronization conflict or corrupted OST, and provides steps to address that. The AI's solution, while potentially helpful for some connection issues, is not faithful to the provided ground truth for this specific error. The escalation logic is also less specific than the ground truth's.","Hi Tester,
 
-To understand the problem and find the right solution, I'll need a little more information. Could you please tell me:
+Thank you for reaching out and providing that screenshot. I can see you're getting a connection error when opening Outlook.
 
-1.  Which specific application or system were you using when the problem occurred?
-2.  What task were you trying to complete?
-3.  Are you seeing a specific error message? If so, providing the exact text or a screenshot of the error would be very helpful for diagnosis.
+This type of error, specifically **Error Code: 0x80040115**, usually means that Outlook is having trouble communicating with our email servers. This is often caused by outdated or corrupted login information that gets saved on your computer. Let's try a few steps to resolve this.
 
-Once I have these details, I can provide you with the correct troubleshooting steps.","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-PROMPT D,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,11867.0,2946,358,7839,0.0962,0.3141,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
+1.  First, please perform a full restart of your computer. This can often clear up temporary network or software issues that prevent Outlook from connecting properly.
+2.  If the error persists after restarting, the next step is to clear Outlook's cached credentials. Please make sure **Outlook** is completely closed before proceeding.
+3.  Open the **Control Panel** on your computer, then go to the **Credential Manager**.
+4.  Inside Credential Manager, select **Windows Credentials**.
+5.  Under the ""Generic Credentials"" list, look for any entries that start with **MicrosoftOffice16**. Click on each of these entries and select the **Remove** option.
+6.  After you have removed all of them, open **Outlook** again. It will ask you to sign in. Please enter your full PCB Apps email address and password, and approve the sign-in request on your phone if prompted.
 
-This error during end of month reporting when posting JE batches, where the batch status shows **Error** with a difference amount, is typically caused by unbalanced journal entries where the debits and credits no longer match. This often happens from manual edits, partial deletions, or import issues that leave the batch out of balance.
+This process forces Outlook to establish a fresh, secure connection and usually resolves this specific error. If you continue to experience the issue after trying these steps, please let me know, and we can investigate further.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"
+PROMPT D,Grok 4.20 Reasoning,ZT-001,I am getting an error message during end of month reporting when posting JE batches. The batch status shows Error with a difference amount.,12626.0,2921,450,7132,0.1504,0.397,0.913,4,5,3,3,5,5,5,5,"The AI's response is mostly correct and helpful. It correctly identifies the problem and provides relevant steps. However, it misses the explicit instruction to 'Repost' the batch, instead saying 'attempt to post the batch again,' which is less actionable than the ground truth. Step 4 for verification is also slightly less precise than the ground truth's instruction to verify debits and credits. Additionally, the bolding is not fully consistent with the ground truth, missing some key terms like 'Unposted Entries,' 'Debits,' 'Credits,' and 'Repost' in bold.","Hi Tester,
 
-To resolve this, please try the following steps in order:
+This error during end of month JE batch posting typically occurs when the batch contains unbalanced entries, unposted lines, or a record lock, which prevents the system from clearing the difference amount and keeps the status as **Error**.
 
-1. Open **Work Center** in JDE and locate the failed batch to review the full error details and confirm the exact difference amount.
-2. Open the specific batch and examine all journal entry lines to identify where the imbalance originates.
-3. If you find extra, duplicate, or incorrect entries that are causing the difference, delete those specific lines to bring the batch back into balance.
-4. Save the changes and attempt to **post** the batch again.
+Please try these steps in order:
 
-Let me know the exact difference amount shown or what you see in the Work Center after step 1 if the batch still fails.","Sources: ['faqs.csv_row_49', 'zoho_ticket', 'faqs.csv_row_21', 'zoho_archive']"
-PROMPT D,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,10651.0,2679,437,6752,0.0901,0.1853,2,5,2,5,5,5,1,5,"The AI correctly identifies the issue as a permissions problem but provides troubleshooting steps rather than a direct solution. The Ground Truth provides a solution by initiating an administrator request. The AI's response is more aligned with 'CLARIFY' or 'DIAGNOSE' rather than 'PROVIDE_SOLUTION' as expected. The steps provided by the AI do not resolve the issue but rather ask the user to perform diagnostic checks and report back, making the actionability low for a 'solution'.","Hi Tester,
+1. Navigate to the **Batch Review** screen.
+2. Locate the specific batch showing the **Error** status.
+3. Identify and **Delete** any unposted entries or erroneous lines inside that batch.
+4. Verify the **Difference Amount** is now zero.
 
-This is likely a permissions issue in **Zoho** where your account role hasn't been granted visibility to the DC33 and JFK organizations, which is a common configuration restriction in their ticket access controls.
+After completing these, attempt to post the batch again. Let me know the result or if you see a specific message like ""Record Locked"" or ""Poster Out of Balance"" so I can guide you on the next step.","Sources: ['zoho_ticket', 'POC_HYBRID_DOCS', 'faqs.csv_row_49', 'zoho_archive', 'faqs.csv_row_21']"
+PROMPT D,Grok 4.20 Reasoning,ZT-002,I cannot access any tickets for DC33 or JFK in Zoho with my login. I am getting access denied.,13808.0,2817,449,6788,0.2041,0.2812,0.9048,3,3,2,5,5,5,2,4,"The AI correctly identifies the root cause of the access denied error. However, its proposed solution deviates significantly from the ground truth. The ground truth immediately initiates the request to the System Administrator, which is the actual solution. The AI, instead, suggests the user try logging back in (which won't work without the admin update) and then *asks* if it should escalate. This makes the solution less direct and actionable than the ground truth, failing to 'PROVIDE_SOLUTION' directly. The 'Hi Tester' is also a bit informal.","Hi Tester,
 
-1. Log out of **Zoho** completely, then log back in using your **test@pcbapps.com** credentials.
-2. Open an incognito browser window, navigate to **Zoho**, and attempt to view a DC33 or JFK ticket to rule out any cached session problems.
-3. Check whether you can successfully open tickets from any other organizations or clients.
+This is happening because your **Zoho Desk** role profile is missing the specialized **Department-Level visibility** permissions for the restricted queues DC33 and JFK. These departments are configured with tighter access controls, so even valid logins return ""Access Denied"" until the backend permissions are updated.
 
-If the access denied error continues after these steps, this will require an administrator to adjust your user permissions or department assignments on the backend. Let me know the results from the steps above so I can guide you further.","Sources: ['zoho_ticket', 'zoho_archive']"
-PROMPT D,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,13298.0,2765,430,7439,0.0984,0.2192,5,5,5,5,5,0,5,5,"The AI's response is highly accurate and provides a detailed, actionable solution that aligns well with the ground truth. The steps are clear, numbered, and include proactive error handling, making them even more robust than the ground truth in some aspects. The formatting is correct, and the tone is professional and empathetic.","Hi Tester,
+Please try these steps in order:
 
-This issue typically happens when the retiree's HMO coverage record hasn't fully processed a termination or status change in the master eligibility data, so the nightly file generation continues to pull them as active.
+1. Log out of **Zoho Desk** completely.
+2. Clear your browser cache and cookies (or try in an incognito/private window).
+3. Log back in and attempt to view tickets in both DC33 and JFK.
 
-1. Log in and navigate to the **Member Eligibility** screen.
-2. Search for the affected retiree using their **P/N** or member ID.
-3. Open the **HMO plan** details and confirm whether an **end date** or **termination date** is populated.
-4. If the date is missing or incorrect, enter the proper **retirement termination date**, change the status to **Inactive**, and click **Save**.
-5. Go to **File Generation** and manually run a new **eligibility file** for the current period, then verify the output no longer lists those retirees as active under HMO.
+If you still receive the access denied error after completing the above, this will require a **System Administrator** to add the department permissions to your account. Would you like me to escalate this to our admin team for the update?","Sources: ['zoho_archive', 'zoho_ticket', 'POC_HYBRID_DOCS']"
+PROMPT D,Grok 4.20 Reasoning,ZT-003,Retirees who are under the HMO plan are still showing as active on the eligibility file. How do I fix this?,11123.0,2902,403,6148,0.2655,0.3817,0.9203,5,5,5,5,5,5,5,5,"The AI's response is excellent. It correctly identifies the issue, provides a clear and concise explanation of the likely cause, and offers actionable, numbered steps that perfectly align with the ground truth. The formatting, including bolding and natural flow, is spot on. It also includes a polite closing and an offer for further assistance, mirroring the escalation logic of the ground truth.","Hi Tester,
 
-If the termination date field is grayed out or you receive any validation error after step 4, reply with the exact error message and the retiree's P/N so I can determine the next step.",Sources: ['zoho_archive']
-PROMPT D,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,17573.0,2866,467,7768,0.1607,0.2591,1,1,2,5,4,0,2,5,"The AI correctly identifies the potential cause (validation rule, UDC settings) but provides troubleshooting steps that are not present in the ground truth. The ground truth provides specific steps to modify UDC settings, which the AI completely misses. The AI's steps are general troubleshooting and not the direct solution. It correctly asks for clarification on the field name, similar to the ground truth's follow-up, but this comes after providing incorrect initial steps. The expected action was to provide a solution, but the AI provided incorrect steps.","Hi Tester,
+This issue typically occurs because the retirement termination dates aren't fully synced between the HR records and the eligibility export, leaving retirees flagged as **Active** in the HMO plan file. 
 
-The **Address Book** is preventing a blank value because the field likely has an active validation rule or is configured as required through UDC settings, which is the standard way the system protects data integrity in our enterprise records.
+To resolve it, follow these steps in order:
 
-Try these steps in order:
+1. Open the **Benefit Administration** system.
+2. Locate the specific retiree record using their member ID or name.
+3. Manually adjust the status field from **Active** to **Retired**.
+4. Confirm the **HMO Plan** line includes the correct retirement effective date.
+5. Generate a new **Eligibility File** and verify the updated status in the export.
 
-1. Open the record in **Address Book**, attempt to leave the field blank again, and note the exact error message that appears.
-2. Enter a single space or the value ""N/A"" in the field and click **Save** to test if the system will accept a placeholder.
-3. Close and reopen the **Address Book** module, then repeat the update using the **Edit** function instead of quick entry.
-4. Clear your browser cache or restart the PCB Apps client and try once more.
+Let me know the result after completing these steps or if you need clarification on any one of them.","Sources: ['zoho_archive', 'POC_HYBRID_DOCS']"
+PROMPT D,Grok 4.20 Reasoning,ZT-004,The address book is not letting me add a blank value to a field. Can you help?,13729.0,3039,445,6474,0.3262,0.4135,0.9214,4,5,4,5,5,5,4,5,"The AI's response is largely correct and follows the ground truth closely. It correctly identifies the problem and provides numbered steps. However, it misses a crucial conditional follow-up instruction from the ground truth: 'If the system still prompts for a value, please share the exact field name so we can adjust the backend database constraints.' This omission slightly reduces its correctness, actionability, and escalation logic score, as it doesn't provide a clear next step if the initial solution fails. The wording in step 2 also slightly differs ('Blank' vs 'Blank' or 'N/A'), but this is a minor point.","Hi Tester,
 
-If the same restriction occurs after these steps, this is most likely a backend field configuration that requires admin or developer changes. Which specific field is giving you this message?","Sources: ['zoho_ticket', 'image_ingestion_1', 'zoho_archive']"
-PROMPT D,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,18417.0,2884,528,9359,0.1129,0.2448,0,0,0,0,0,0,0,0,Judge Failed,"Hi Tester,
+This is happening because a **UDC (User Defined Code)** validation rule is treating the field as mandatory in the Address Book, which blocks blank or empty values even when you need to save the record that way.
 
-The Daiwa fiscal year-end close finalizes all transactions, reconciles accounts, and locks the period so the new fiscal year can begin cleanly. This is why the business has flagged the next two weeks as critical in our tracking ticket to prevent any system changes or outages that could affect the process.
+Here are the steps to resolve it:
 
-Here are the standard steps to perform the close:
+1. Navigate to the **UDC Maintenance** screen for the specific field that's triggering the error.
+2. Check the validation table to see if a **Blank** row is permitted.
+3. Apply the system fix to disable the mandatory field requirement for the affected module.
+4. Refresh the **Address Book**, then try saving the record again with the blank value.
 
-1. Confirm with the finance team that all invoices, payments, and journal entries for the period are posted and approved.
-2. Log into the **financial system** and run the **reconciliation reports** for the Daiwa entity to verify balances.
-3. Navigate to **Period Close > Fiscal Year End**.
-4. Select the current **Daiwa fiscal year** and click **Validate Close**.
-5. Once validation passes, click **Close Period** and confirm the action.
-6. Generate and save the **year-end financial statements** and closing journal entries.
+Let me know what happens after you complete these steps or if you see any specific error message.","Sources: ['zoho_ticket', 'zoho_archive', 'image_ingestion_1', 'POC_HYBRID_DOCS']"
+PROMPT D,Grok 4.20 Reasoning,ZT-005,We need to close the Daiwa fiscal year end. What is the process and can you walk me through it?,17255.0,2977,507,8219,0.0656,0.1916,0.8723,1,1,2,5,4,5,2,5,"The AI completely failed to provide the correct financial process steps for closing the Daiwa fiscal year-end as outlined in the ground truth. Instead, it provided IT-related precautions and system checks, which are not what the user asked for. This makes the response incorrect and unfaithful to the ground truth. While the format and tone are good, the core information is wrong, leading to low scores in correctness, faithfulness, and actionability. The AI misinterpreted the user's need, providing IT-centric steps instead of financial ones.","Hi Tester,
 
-If the **Close Period** button is unavailable or you receive a permissions error, this is typically caused by role-based access settings that only finance administrators or backend support can adjust.
+The Daiwa fiscal year-end close is a scheduled finance process that finalizes accounts, reconciliations, and reporting for the period. The recent notification highlights that the next two weeks are business-critical, so the most common technical factors are restricted system changes, access controls, and ensuring platform stability to prevent any disruption to the finance team's workflows.
 
-Let me know what you see when you reach step 3 or if you get any specific error message.","Sources: ['zoho_ticket', 'faqs.csv_row_52', 'zoho_archive']"
-PROMPT D,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,11716.0,2772,435,6903,0.1266,0.3306,1,1,2,4,5,5,1,5,"The AI's response provides an incorrect process for removing a member. The ground truth states that the user should submit a formal request directly to the 'Data Management team'. The AI, however, instructs the user to provide the details to *it* (the AI), and then *it* will submit the request to a 'backend processing team'. This deviates significantly from the documented internal process, making it incorrect and unfaithful to the KB. While steps are provided, they are for interacting with the AI, not for the user to follow the correct internal procedure, thus reducing actionability. The tone and format are good, and the query was not ambiguous.","Hi Tester,
+To support this process safely, follow these steps in order:
 
-Removing a member from the eligibility file requires a backend update because these files are generated from a central member database and processed in scheduled batches. Direct edits aren't available to end users in order to preserve the audit trail and data consistency.
+1. Confirm you have the required **access permissions** by logging into the financial system or **Daiwa module** you normally use for closing tasks.
+2. If you receive any access errors, open your **user profile** in the **ITSM portal** and verify your assigned roles have not expired.
+3. Avoid initiating any **software updates**, **batch jobs**, or **configuration changes** in the affected systems during this window.
+4. Run a quick test transaction or report that you normally use and note any error messages or performance issues.
 
-To handle this safely, please follow these steps:
-1. Collect the **member ID**, **full name**, **date of birth**, and the specific **reason** for removal.
-2. Reply to this message with those details (plus any supporting documentation if available).
-3. I'll review the information and submit the formal removal request to our backend processing team for inclusion in the next eligibility file run.
+If these steps don't resolve your needs or you see a specific error while trying to perform the close, let me know the exact error message and which system you're working in so I can assist further.","Sources: ['faqs.csv_row_52', 'zoho_ticket', 'zoho_archive']"
+PROMPT D,Grok 4.20 Reasoning,ZT-006,I need to remove a member from the eligibility file. How do we process this request?,13594.0,2864,321,7255,0.0173,0.2562,0.8747,1,1,1,2,1,5,1,4,"The AI completely fails to provide the solution outlined in the ground truth. Instead of giving the user the steps to follow to remove a member, it asks for information so it can route the request. This is a significant deviation from the expected action (PROVIDE_SOLUTION) and the content of the ground truth. It does not mention the 'Data Management team' or the 'Termination Request' process. It attempts to act as an intermediary rather than providing the process to the user.","Hi Tester,
 
-Let me know those details whenever you're ready.",Sources: ['zoho_archive']
-PROMPT D,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,12638.0,2647,349,6755,0.02,0.1416,0,0,1,3,0,0,0,4,"The user's query is extremely vague. The AI hallucinates specific details like 'PCB Apps platform' and 'pcbapps.com' and provides troubleshooting steps based on these assumptions, which is incorrect. It fails to clarify the issue first, which was the expected action. While the tone is polite, the content is unhelpful and based on ungrounded assumptions.","Hi Tester,
+Eligibility files are generated from the backend member database, so removing someone requires an official status update to prevent them from appearing in future files while maintaining compliance and audit accuracy.
 
-This is commonly caused by outdated browser cache, a temporary session glitch, or a front-end connectivity hiccup with the PCB Apps platform. 
+To process this safely, please provide the member's ID (or full name and date of birth) along with the effective removal date. Once I have those details I can route the update to the team that manages **MemberPlus** changes.",Sources: ['zoho_archive']
+PROMPT D,Grok 4.20 Reasoning,ZT-007,Something is broken in the system.,15123.0,2797,492,7132,0.0394,0.1573,0.8589,2,2,3,4,2,5,2,4,"The user's query is extremely vague ('Something is broken'). The ground truth correctly identifies the need to CLARIFY by asking for specific details (application, error message, etc.) before attempting any solution. The AI, however, first attempts to diagnose the issue with general causes and provides troubleshooting steps. While these steps are generally useful, they are premature and speculative given the lack of information. Only *after* these steps does it ask for clarification. This approach is less correct and faithful than the ground truth, which prioritizes gathering information for a vague query. The AI's ambiguity handling is poor because it tries to solve before clarifying. The escalation logic is also off as it mixes solving with clarifying, rather than purely clarifying as expected.","Hi Tester,
 
-1. Perform a hard refresh by holding **Ctrl** and pressing **F5** (or **Cmd + Shift + R** on Mac) while on the affected page.
-2. Open a new **Incognito** or private browsing window and try logging into the system again.
-3. Clear your browser cache and cookies specifically for **pcbapps.com** through your browser settings.
-4. Restart your browser completely and test once more.
+This kind of vague ""something is broken"" symptom is usually caused by a temporary session timeout, cached credentials that have gone stale, or a brief backend service hiccup on our end.
 
-If the issue continues after these steps, can you share the exact error message or what specifically isn't working?","Sources: ['faqs.csv_row_44', 'zoho_archive']"
-Quality Scores: Scaled 0 to 5 (5 = Excellent; 0 = Failure)
-BLEU/ROUGE-L: Mathematical alignment (0.0 to 1.0; 1.0 = Perfect Word Match)
-Tokens: Volume of data units. Capacity: Gemini Pro (1M); Grok 4.20 (2M)
+Let's run through the standard first-line checks that resolve most of these cases:
+
+1. Close all windows of the application or **browser** you're using, then reopen it and try again.
+2. If you're working remotely, disconnect and reconnect to the **VPN** client.
+3. Press **Ctrl + Shift + R** (or **Cmd + Shift + R** on Mac) to perform a hard refresh that bypasses the local cache.
+4. Check the **status page** in the **IT Service Portal** to see if any services are showing as degraded.
+
+Can you reply with the exact error message or the name of the specific system or application that's not working? That will let me narrow it down immediately.","Sources: ['faqs.csv_row_46', 'faqs.csv_row_44', 'zoho_archive', 'faqs.csv_row_1', 'faqs.csv_row_33']"
+PROMPT D,Grok 4.20 Reasoning,ZT-008,I am getting this error when opening Outlook. I have attached a screenshot. What should I do?,15940.0,2922,500,6783,0.0864,0.1789,0.8714,2,1,5,5,5,5,3,5,"The AI correctly identified the error code from the screenshot and maintained an excellent tone and format. However, its proposed solution and explanation for error 0x80040115 significantly deviate from the ground truth. The ground truth specifically targets a corrupted OST file as the cause and provides steps to rename it. The AI, instead, focuses on stale credentials and general connectivity checks, completely missing the core solution provided in the ground truth. This makes the response unfaithful and incorrect regarding the specific resolution for this error. The escalation logic also differs, with the AI asking for more information rather than suggesting creating a ticket for the Infrastructure team as the ground truth does.","Hi Tester,
+
+This error (0x80040115) usually means Outlook cannot reach our Exchange server at pcbapps.com, most often caused by stale cached credentials, a brief network hiccup, or an authentication token that needs refreshing.
+
+Please try these steps in order:
+
+1. Confirm your internet is working by opening a browser and loading a site like google.com.
+2. Completely close Outlook (check the system tray and end the process in Task Manager if needed), then reopen it and test.
+3. If the error returns, open **Control Panel** and search for **Credential Manager**. Under **Windows Credentials**, remove every entry that starts with **MicrosoftOffice16** or contains pcbapps.com. 
+4. Restart Outlook, enter your full email address (test@pcbapps.com) when prompted, and approve the MFA prompt on your phone.
+5. If it still fails, open a browser and go to **outlook.office.com** to see if you can access your mailbox via the web.
+
+Let me know the exact result after step 4 (does the same error appear, or does it ask for a password, or something else?). We'll go from there.","Sources: ['zoho_ticket', 'faqs.csv_row_44', 'faqs.csv_row_8', 'zoho_archive', 'outlook_setup.md']"

@@ -54,5 +54,14 @@
     "ground_truth": "You've mentioned that \"something is broken in the system,\" but I need a few more details to help you find the specific fix. Without knowing which application you are using or the specific error message you're seeing, I cannot provide an accurate troubleshooting path.\n\nTo resolve this, please follow these steps:\n\n1. Please specify which **Application** or module (e.g., Zoho, JDE, SAP) is showing an issue.\n2. Provide the exact text of any **Error Message** appearing on your screen.\n3. Let me know when the issue started and if an **Image** or screenshot is available.\n\nOnce I have these details, I can provide the exact resolution steps or escalate this to the right specialist for you.",
     "expected_action": "CLARIFY",
     "notes": "Tests that bot asks for more details instead of guessing."
+  },
+  {
+    "id": "ZT-008",
+    "category": "Multimodal-Support",
+    "query": "I am getting this error when opening Outlook. I have attached a screenshot. What should I do?",
+    "image_path": "evaluations/resources/outlook_error.png",
+    "ground_truth": "I see from the screenshot that your Outlook client is failing to connect to the server with Error Code: 0x80040115. This specific error typically indicates a synchronization conflict or a corrupted offline data file (OST) preventing a secure connection to pcapps.com.\n\nTo resolve this, please follow these steps:\n\n1. Close your **Outlook** application completely.\n2. Open the **Control Panel**, search for **Mail**, and select **Email Accounts**.\n3. Go to the **Data Files** tab, select your account, and click **Open File Location**.\n4. Rename the .ost file (e.g., add '.old' to the end) and restart **Outlook** to rebuild the cache.\n\nIf the connection still fails, we may need to reset your RPC settings. Please let me know if you would like me to create a support ticket for the Infrastructure team.",
+    "expected_action": "PROVIDE_SOLUTION",
+    "notes": "Tests multimodal image analysis for Outlook connection errors."
   }
 ]
