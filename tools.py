@@ -2,9 +2,9 @@
 import random
 import time
 import controller 
-# Import controller to access DB (ensure circular imports are handled if any, 
-# though tools.py is usually a leaf or main imports it. 
-# Safe to import inside functions if needed, but top level is fine here as main.py imports tools)
+import database
+import visualizer
+import json
 
 def check_server_status(server_name):
     """
@@ -110,6 +110,74 @@ def escalate_to_human(reason, email, chat_history=None):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+def list_user_tickets(email, status=None):
+    """
+    Lists all tickets for a specific user. Can be filtered by status.
+    """
+    try:
+        tickets = database.get_user_tickets_summary(email)
+        if not tickets:
+            return {"message": f"No tickets found for user {email}."}
+        
+        if status:
+            tickets = [t for t in tickets if t.get('status', '').lower() == status.lower()]
+            if not tickets:
+                return {"message": f"No tickets found for user {email} with status '{status}'."}
+
+        # Return a clean summary
+        summary = []
+        for t in tickets:
+            summary.append({
+                "ticket_id": t['ticket_id'],
+                "subject": t['subject'],
+                "status": t['status'],
+                "priority": t['priority'],
+                "created_at": str(t['created_at'])
+            })
+        return {"tickets": summary}
+    except Exception as e:
+        return {"error": str(e)}
+
+def visualize_data(labels, values, title="User Dashboard", chart_type="bar"):
+    """
+    Generates a chart from provided data. Used for Interactive Analysis.
+    """
+    try:
+        if chart_type == "bar":
+            path = visualizer.create_bar_chart(labels, values, title)
+        elif chart_type == "pie":
+            path = visualizer.create_pie_chart(labels, values, title)
+        elif chart_type == "line":
+            path = visualizer.create_line_chart(labels, values, title)
+        else:
+            return {"error": f"Unsupported chart type: {chart_type}"}
+        
+        return {"image_path": path, "message": f"Generated {chart_type} chart: {title}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+def generate_ticket_insights(insight_type="status"):
+    """
+    Generates visual insights from current database tickets.
+    insight_type: 'status', 'priority', or 'trends'
+    """
+    try:
+        if insight_type == "status":
+            data = database.get_ticket_status_counts()
+            path = visualizer.create_pie_chart(list(data.keys()), list(data.values()), "Ticket Status Distribution")
+        elif insight_type == "priority":
+            data = database.get_ticket_priority_counts()
+            path = visualizer.create_bar_chart(list(data.keys()), list(data.values()), "Ticket Volume by Priority")
+        elif insight_type == "trends":
+            data = database.get_ticket_volume_trends()
+            path = visualizer.create_line_chart(list(data.keys()), list(data.values()), "Monthly Ticket Volume Activity")
+        else:
+            return {"error": "Unsupported insight type."}
+
+        return {"image_path": path, "message": f"Generated {insight_type} insights dashboard."}
+    except Exception as e:
+        return {"error": str(e)}
+
 # Registry of available tools for the AI
 AVAILABLE_TOOLS = [
     {
@@ -194,6 +262,68 @@ AVAILABLE_TOOLS = [
             },
             "required": ["reason", "email"]
         }
+    },
+    {
+        "name": "list_user_tickets",
+        "description": "List all support tickets for a specific user. Can be filtered by status (Open, Closed, In-Progress).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "description": "The user's email address."
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Optional status filter (e.g., 'Open', 'Closed')."
+                }
+            },
+            "required": ["email"]
+        }
+    },
+    {
+        "name": "visualize_data",
+        "description": "Visualize data provided by the user in a chart. Use this when the user gives numerical data and asks for a chart or graph.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "labels": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "The names for each data category."
+                },
+                "values": {
+                    "type": "array",
+                    "items": {"type": "number"},
+                    "description": "The numeric values for each category."
+                },
+                "title": {
+                    "type": "string",
+                    "description": "A descriptive title for the chart."
+                },
+                "chart_type": {
+                    "type": "string",
+                    "enum": ["bar", "pie", "line"],
+                    "description": "The type of chart to display."
+                }
+            },
+            "required": ["labels", "values", "title", "chart_type"]
+        }
+    },
+    {
+        "name": "generate_ticket_insights",
+        "description": "Show visual analytics of tickets stored in the database. Good for showing ticket status, priority trends, or volume.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "insight_type": {
+                    "type": "string",
+                    "enum": ["status", "priority", "trends"],
+                    "description": "The type of data to visualize."
+                }
+            },
+            "required": ["insight_type"]
+        }
     }
 ]
 
@@ -211,5 +341,11 @@ def execute_tool(tool_name, params):
         return create_ticket(params.get("description"), params.get("email"), params.get("priority", "Medium"))
     elif tool_name == "escalate_to_human":
         return escalate_to_human(params.get("reason"), params.get("email"))
+    elif tool_name == "list_user_tickets":
+        return list_user_tickets(params.get("email"), params.get("status"))
+    elif tool_name == "visualize_data":
+        return visualize_data(params.get("labels"), params.get("values"), params.get("title"), params.get("chart_type", "bar"))
+    elif tool_name == "generate_ticket_insights":
+        return generate_ticket_insights(params.get("insight_type", "status"))
     else:
         return {"error": f"Tool '{tool_name}' not found."}

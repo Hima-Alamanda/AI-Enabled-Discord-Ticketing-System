@@ -47,6 +47,43 @@ class TicketModal(ui.Modal, title='Edit Ticket Details'):
         await interaction.response.defer()
         await self.parent_view.update_message(interaction)
 
+class QualityMetricsButton(ui.Button):
+    def __init__(self, eval_metrics):
+        super().__init__(label="Quality Metrics", style=discord.ButtonStyle.secondary, custom_id=f"metrics_{uuid.uuid4().hex[:8]}")
+        self.eval_metrics = eval_metrics
+
+    async def callback(self, interaction: discord.Interaction):
+        # Admin Check: handle both Guild and DM scenarios
+        is_admin = False
+        if interaction.guild:
+            is_admin = interaction.user.guild_permissions.administrator
+        else:
+            # In DMs, we can't check guild-level permissions.
+            # For testing purposes, we permit metrics in DMs.
+            is_admin = True
+
+        if not is_admin:
+            await interaction.response.send_message("This information is restricted to administrators.", ephemeral=True)
+            return
+
+        m = self.eval_metrics
+        embed = discord.Embed(title="Quality Metrics", color=discord.Color.purple())
+        
+        # Scores
+        embed.add_field(name="Correctness", value=f"{m.get('correctness', 0)}/5", inline=True)
+        embed.add_field(name="Faithfulness", value=f"{m.get('faithfulness', 0)}/5", inline=True)
+        embed.add_field(name="Actionability", value=f"{m.get('actionability', 0)}/5", inline=True)
+        
+        # KB Context (Sources only)
+        kb_sources = m.get('kb_sources', [])
+        if kb_sources:
+            source_text = f"Sources: {kb_sources}"
+        else:
+            source_text = "No KB sources used."
+        embed.add_field(name="Citations", value=source_text, inline=False)
+        
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+
 class CustomDepartmentModal(ui.Modal, title='Enter Custom Department'):
     dept = ui.TextInput(label='Department Name', placeholder='e.g. Facilities, Marketing...', style=discord.TextStyle.short)
 
@@ -342,14 +379,16 @@ class ResolutionView(ui.View):
             LATEST_ATTACHMENTS.pop(self.conv_id, None)
         
         # Keep original content (from text or embed)
-        original_text = interaction.message.content or ""
-        embed = None
-        if interaction.message.embeds:
-            embed = interaction.message.embeds[0]
-            original_text = embed.description or original_text
+        original_text = ""
+        msg = interaction.message
+        if msg:
+            original_text = msg.content or ""
+            if msg.embeds:
+                original_text = msg.embeds[0].description or original_text
 
         new_text = truncate_text(f"{original_text}\n\n**Issue Resolved** — Closing session. Share your next issue anytime.")
         
+        embed = msg.embeds[0] if msg and msg.embeds else None
         if embed:
             embed.description = new_text
             await interaction.response.edit_message(embed=embed, view=None, content=None)
@@ -357,10 +396,10 @@ class ResolutionView(ui.View):
             await interaction.response.edit_message(content=new_text, view=None)
 
     async def questions_callback(self, interaction: discord.Interaction):
-        original_text = interaction.message.content or ""
-        embed = None
-        if interaction.message.embeds:
-            embed = interaction.message.embeds[0]
+        msg = interaction.message
+        original_text = msg.content or "" if msg else ""
+        embed = msg.embeds[0] if msg and msg.embeds else None
+        if embed:
             original_text = embed.description or original_text
 
         new_text = truncate_text(f"{original_text}\n\n**Continuing conversation...**")
@@ -462,10 +501,10 @@ class ResolutionView(ui.View):
         if self.conv_id:
             LATEST_ATTACHMENTS.pop(self.conv_id, None)
         # Keep original content but add cancellation footer
-        original_text = interaction.message.content or ""
-        embed = None
-        if interaction.message.embeds:
-            embed = interaction.message.embeds[0]
+        msg = interaction.message
+        original_text = msg.content or "" if msg else ""
+        embed = msg.embeds[0] if msg and msg.embeds else None
+        if embed:
             original_text = embed.description or original_text
 
         new_text = truncate_text(f"{original_text}\n\n**Issue session cancelled.**")
@@ -630,10 +669,21 @@ class DiscordSupportBot(discord.Client):
                 if embed is not None: kwargs["embed"] = embed
                 if view is not None: kwargs["view"] = view
                 
+                # Check for generated image (charts)
+                image_path = response_data.get('image_path')
+                if image_path and os.path.exists(image_path):
+                    kwargs["file"] = discord.File(image_path)
+                
                 if interaction:
                     return await interaction.followup.send(**kwargs)
                 else:
                     return await message.reply(**kwargs)
+
+            # Helper to add metrics button if available
+            def attach_metrics(view):
+                eval_metrics = response_data.get("eval_metrics")
+                if eval_metrics and view:
+                    view.add_item(QualityMetricsButton(eval_metrics))
 
             S = chatbot_engine.STAGES
 
@@ -651,6 +701,7 @@ class DiscordSupportBot(discord.Client):
                     conv_id, 
                     attachment_bytes=att_bytes, filename=att_filename, issue_id=issue_id
                 )
+                attach_metrics(view)
                 embed = discord.Embed(
                     description=content or "I have prepared a ticket for a technician to review.",
                     color=discord.Color.orange()
@@ -659,6 +710,7 @@ class DiscordSupportBot(discord.Client):
                 
             elif state_val == S["CONTINUITY"]:
                 view = ContinuityDecisionView(user, issue_id, conv_id)
+                attach_metrics(view)
                 await send_reply(content=content, view=view)
                 
             elif state_val == S["CLARIFYING"]:
@@ -673,26 +725,35 @@ class DiscordSupportBot(discord.Client):
                 
                 if options:
                     view = ClarificationView(user, options, issue_id, conv_id)
+                    attach_metrics(view)
                     await send_reply(content=content, view=view)
                 else:
-                    await send_reply(content=content)
+                    # Even for simple text without a view, we can add a view just for metrics
+                    view = ui.View(timeout=600)
+                    attach_metrics(view)
+                    await send_reply(content=content, view=view)
                     
             elif state_val == S["AUTOMATING"]:
                 embed = discord.Embed(description=content, color=discord.Color.gold())
                 embed.set_footer(text="Automation — reply yes or no")
-                await send_reply(embed=embed)
+                view = ui.View(timeout=600)
+                attach_metrics(view)
+                await send_reply(embed=embed, view=view)
                 
             elif intent in ["support_question", "followup", "file_analysis", "other"] and issue_id:
                 view = ResolutionView(
                     user, issue_id, confidence, ticket_data, conv_id, 
                     attachment_bytes=att_bytes, filename=att_filename
                 )
+                attach_metrics(view)
                 embed = discord.Embed(description=content, color=discord.Color.blue())
                 await send_reply(embed=embed, view=view)
             else:
                 # Default fallback for simple messages
                 # Use a larger limit for fallback messages
-                await send_reply(content=truncate_text(content, 4000))
+                view = ui.View(timeout=600)
+                attach_metrics(view)
+                await send_reply(content=truncate_text(content, 4000), view=view)
 
             history.append({"role": "user", "content": user_msg})
             history.append({"role": "assistant", "content": content})

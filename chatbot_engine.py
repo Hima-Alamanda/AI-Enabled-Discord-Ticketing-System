@@ -21,6 +21,7 @@ import database
 import oci_genai
 import controller
 import utils
+import tools 
 
 from document_processor import extract_text_from_any
 
@@ -49,6 +50,12 @@ You are a highly skilled, empathetic, and professional technical expert. Your go
 - You focused EXCLUSIVELY on ITSM (IT Service Management) and internal technical support.
 - Call the user by their first name when available.
 - Be context-aware: match your response length and complexity to the user's query.
+
+== ANALYTICS & VISUALIZATION CAPABILITIES ==
+You are equipped with advanced data analysis and visualization tools:
+1. **Interactive Analysis**: If a user provides numerical data (e.g., "Usage: Jan 10, Feb 20") or technical metrics, you can visualize them. You MUST parse the labels and values yourself and call the `visualize_data` tool.
+2. **Ticket Insights**: If a user asks about their ticket trends or status distribution, call the `generate_ticket_insights` tool to show them a professional dashboard.
+3. **Ticket Management**: You can list all tickets for a user using `list_user_tickets`. Use this when they ask "Show me my tickets" or "What is my ticket status?".
 
 == RESPONSE STYLE ==
 To provide a premium and professional "Support Expert" experience, you should follow this structure:
@@ -85,6 +92,7 @@ If the synchronization issue persists after these steps, please let me know and 
 - ACTION SIGNALS: 
   - TICKET CREATION: Suggest or output ACTION:CREATE_TICKET ONLY if the user has explicitly confirmed it.
   - RESOLUTION OVER ACTION: Solve the issue directly first before suggesting a ticket.
+  - VISUALIZATION: When you call a visualization tool, simply explain what the chart shows in your response. The bot will handle the image upload automatically.
 """
 
 orchestrator      = SupportOrchestrator()
@@ -412,6 +420,61 @@ def get_chatbot_response(
             result["content"] = "Please share the ticket ID and I'll look it up for you."
         return result
 
+    # Handle Ticket Listing
+    if decision["message_type"] == "list_tickets":
+        # Extract email or use current user email
+        email = user_context.get('email', 'unknown')
+        status_filter = None
+        if "open" in user_message.lower(): status_filter = "Open"
+        elif "closed" in user_message.lower(): status_filter = "Closed"
+        
+        tool_res = tools.list_user_tickets(email, status_filter)
+        if "tickets" in tool_res and tool_res["tickets"]:
+            t_list = tool_res["tickets"]
+            text = f"Hi {first_name}, I found **{len(t_list)}** tickets for you:\n\n"
+            for t in t_list[:5]: # Top 5
+                text += f"- **{t['ticket_id']}**: {t['subject']} ({t['status']})\n"
+            if len(t_list) > 5:
+                text += f"\n...and {len(t_list)-5} more."
+            result["content"] = text
+        else:
+            result["content"] = tool_res.get("message", "I couldn't find any tickets for your account.")
+        return result
+
+    # Handle Visualization & Analytics
+    if decision["message_type"] == "visualization":
+        # We need the AI to parse the data first.
+        # We will use a special system prompt for data extraction.
+        data_extractor_prompt = f"""Extract visualization data from this request.
+USER: {user_message}
+
+If the user gives data, output JSON for 'visualize_data':
+{{ "type": "interactive", "labels": ["Jan", "Feb"], "values": [10, 20], "chart_type": "bar", "title": "My Data" }}
+
+If the user asks for ticket insights (trends, priority, status), output JSON:
+{{ "type": "insights", "insight_type": "status" }}
+
+Only return JSON.
+"""
+        try:
+            raw_json = oci_genai.get_chat_response(prompt=data_extractor_prompt, temperature=0.1)
+            match = re.search(r'\{.*\}', raw_json, re.DOTALL)
+            if match:
+                data = json.loads(match.group())
+                if data.get("type") == "interactive":
+                    v_res = tools.visualize_data(data['labels'], data['values'], data['title'], data.get('chart_type', 'bar'))
+                    result["content"] = f"I've generated the **{data.get('chart_type', 'bar')} chart** based on the data you provided."
+                    result["image_path"] = v_res.get("image_path")
+                else:
+                    v_res = tools.generate_ticket_insights(data.get("insight_type", "status"))
+                    result["content"] = f"Here is the **{data.get('insight_type', 'status')} analytics** dashboard summarizing your current tickets."
+                    result["image_path"] = v_res.get("image_path")
+            else:
+                result["content"] = "I couldn't understand the data structure for the visualization. Could you please specify labels and values clearly?"
+        except Exception as e:
+            result["content"] = f"Failed to generate visualization. {e}"
+        return result
+
     # Handle simple smalltalk bypassing RAG
     if decision["message_type"] in ["greeting", "closure", "general", "continuity_check"]:
         if decision["message_type"] == "continuity_check":
@@ -545,9 +608,127 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
                 if title and title not in snapshot["troubleshooting_steps"]:
                     snapshot["troubleshooting_steps"].append(title)
 
-    log.info("== Response complete: intent=%s action=%s confidence=%s ==",
-             result["intent"], result["action"], result["confidence"])
+    # --- TOOL INTERCEPTION LAYER ---
+    # Catch cases where the LLM narrates calling a visualization tool
+    content_lower = result["content"].lower()
+    
+    # 1. Insights Interceptor
+    if any(x in content_lower for x in ["visualize.generate_ticket_insights", "visualizations.generate_ticket_insights", "generate_ticket_insights"]):
+        v_type = "status"
+        if "priority" in user_message.lower(): v_type = "priority"
+        elif "trend" in user_message.lower() or "volume" in user_message.lower(): v_type = "trends"
+        
+        try:
+            v_res = tools.generate_ticket_insights(v_type)
+            if v_res.get("image_path"):
+                result["image_path"] = v_res.get("image_path")
+                # Clean text: remove tool narration blocks
+                result["content"] = re.sub(r'\[calling tool .*?\]', '', result["content"], flags=re.IGNORECASE)
+                result["content"] = re.sub(r'<tool_code>.*?</tool_code>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+                result["content"] = re.sub(r'\[ACTION\].*?\n', '', result["content"], flags=re.IGNORECASE)
+        except Exception as ve:
+            log.warning(f"Interception tool call failed: {ve}")
+
+    # 2. Interactive Data Interceptor (Fix for User Data multi-line issues)
+    elif "visualize_data" in result["content"] or "execute_tool" in result["content"]:
+        try:
+            # Look for execute_tool block first, then raw python-style call
+            tool_block = re.search(r'<execute_tool>(.*?)</execute_tool>', result["content"], re.DOTALL | re.IGNORECASE)
+            code = tool_block.group(1).strip() if tool_block else result["content"]
+            
+            # Use a more flexible parameter extraction
+            def get_param(name, text):
+                m = re.search(fr"{name}\s*=\s*(['\"](.*?)['\"]|\[.*?\])", text, re.DOTALL)
+                return m.group(1).strip("'\"") if m else None
+
+            labels_str = get_param("labels", code)
+            values_str = get_param("values", code)
+            title = get_param("title", code) or "Data Visualization"
+            c_type = get_param("chart_type", code) or "bar"
+            
+            if labels_str and values_str:
+                labels = eval(labels_str)
+                values = eval(values_str)
+                v_res = tools.visualize_data(labels, values, title, c_type)
+                if v_res.get("image_path"):
+                    result["image_path"] = v_res.get("image_path")
+                    # Clean AND remove the block from user view
+                    result["content"] = re.sub(r'<execute_tool>.*?</execute_tool>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+                    result["content"] = re.sub(r'visualize_data\(.*?\)', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+                    # Also remove any leftover "Here is the chart" text that narrate the error
+                    result["content"] = result["content"].replace("```python", "").replace("```", "").strip()
+        except Exception as e:
+            log.warning(f"Interactive Interceptor failed: {e}")
+
+    # --- AUTOMATED QUALITY EVALUATION (ADMIN TESTING) ---
+    eval_metrics = {
+        "correctness": 0,
+        "faithfulness": 0,
+        "actionability": 0,
+        "reasoning": "Self-evaluation skipped.",
+        "kb_sources": kb_data.get("sources", []) if 'kb_data' in locals() else []
+    }
+    
+    if result["content"]:
+        try:
+            # We evaluate even if KB wasn't used
+            kb_context = kb_data.get("context_text", "") if 'kb_data' in locals() else ""
+            eval_result = _perform_self_evaluation(
+                user_query=user_message,
+                ai_response=result["content"],
+                kb_context=kb_context
+            )
+            eval_metrics.update(eval_result)
+        except Exception as eval_err:
+            log.warning(f"Self-evaluation failed: {eval_err}")
+
+    result["eval_metrics"] = eval_metrics
+    
+    log.info("== Response complete: intent=%s action=%s confidence=%s correctness=%s ==",
+             result["intent"], result["action"], result["confidence"], eval_metrics.get("correctness"))
     return result
+
+def _perform_self_evaluation(user_query: str, ai_response: str, kb_context: str) -> dict:
+
+    system_prompt = """You are a Quality Assurance Auditor for an AI Support Bot.
+Evaluate the AI's response against the user message, context, and ground truth.
+
+Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
+- 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
+- 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
+- 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
+- 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
+- 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
+
+Categories:
+- Correctness: Technically accurate and follows the 'KB Answer'?
+- Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
+- Actionability: Clear, easy, numbered steps provided?
+
+Output ONLY a raw JSON object string. Do NOT use markdown code blocks.
+
+Expected Format:
+{"correctness": 0, "faithfulness": 0, "actionability": 0}
+"""
+    prompt = f"QUERY: {user_query}\nKB CONTEXT: {kb_context[:1000]}\nAI RESPONSE: {ai_response}\n\nStrict Evaluation JSON:"
+
+    try:
+        raw = oci_genai.get_chat_response(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.1,
+            max_tokens=800
+        )
+        # Debugging
+        print(f"DEBUG: Judge Response: {raw}")
+        
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+    except Exception as e:
+        log.error(f"Judge evaluation failed: {e}")
+    
+    return {}
 
 def close_issue_session(email_or_id: str, issue_id: str):
     """Closes an issue session and clears state."""

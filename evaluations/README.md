@@ -9,7 +9,7 @@ Our evaluation uses a diverse 8-case benchmark derived from real PCB Apps suppor
 
 | Case ID | Type | Retrieval Source | Goal |
 |:---|:---|:---|:---|
-| **ZT-001 - ZT-004** | **Sanitized SOPs** | Manually Verified Knowledge Base | Measures accuracy when high-quality documentation is available. |
+| **ZT-001 - ZT-004** | **Documented Files** | Manually Verified Knowledge Base | Measures accuracy when high-quality documentation is available. |
 | **ZT-005 - ZT-008** | **Raw Ticket Vectors** | Unstructured Archive History | Measures the bot's "deduction" skills using raw previous chat history. |
 
 ---

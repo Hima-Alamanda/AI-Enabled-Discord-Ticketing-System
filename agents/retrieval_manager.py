@@ -105,7 +105,30 @@ class RetrievalManager:
 
         try:
             query_vector = get_embed_model().encode(query)
-            candidates = database.search_kb_vectors(query_vector, n_results=top_k)
+            # --- TIERED RETRIEVAL LOGIC ---
+            # Tier 1: Search the "Gold Standard" SOPs first
+            log.info("RAG Tier 1: Searching POC_HYBRID_DOCS...")
+            candidates = database.search_kb_vectors(query_vector, n_results=top_k, source='POC_HYBRID_DOCS')
+            
+            # If we find a "Near Perfect" match in the SOPs, use them exclusively
+            # MPNET-base typically considers < 0.25 as a very strong match
+            if candidates and candidates[0].get("distance", 1.0) < 0.25:
+                log.info("RAG SUCCESS: Strong SOP match found (dist: %.4f). Prioritizing SOP.", 
+                         candidates[0]['distance'])
+            else:
+                # Tier 2: General Fallback search (Old behavior)
+                if candidates:
+                    log.info("RAG Tier 1 weak (dist: %.4f). Proceeding to Tier 2 general search.",
+                             candidates[0]['distance'])
+                else:
+                    log.info("RAG Tier 1 found nothing. Proceeding to Tier 2 general search.")
+                    
+                general_candidates = database.search_kb_vectors(query_vector, n_results=top_k)
+                
+                # Merge or Replace? 
+                # We replace to keep the context window clean with the globally best matches
+                candidates = general_candidates
+
         except Exception as e:
             log.error("KB vector search error: %s", e)
             return result

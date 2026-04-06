@@ -398,15 +398,15 @@ def run_suite():
 
         f.write("\n---\n")
 
-        f.write("## 2. Quality Metrics (0-5 Scale)\n")
+        f.write("## 2. Quality Metrics (1-5 Scale)\n")
         f.write("Each model's response is scored by an independent AI Auditor based on this scale:\n\n")
         f.write("| Score | Rating | Description |\n")
         f.write("|:---:|:---|:---|\n")
         f.write("| **5** | **Excellent** | Fully correct, clear, well-structured, and follows all required rules |\n")
         f.write("| **4** | **Good** | Correct and helpful, with only minor issues in wording, tone, or formatting. |\n")
         f.write("| **3** | **Acceptable** | Mostly correct, but missing some details or clarity. |\n")
-        f.write("| **1-2** | **Poor** | Contains important mistakes, unclear steps, or does not fully address the user’s issue. |\n")
-        f.write("| **0** | **Failure** | Incorrect, misleading, made up facts, or failed to answer the query. |\n\n")
+        f.write("| **2** | **Poor** | Contains important mistakes, unclear steps, or does not fully address the user’s issue. |\n")
+        f.write("| **1** | **Failure** | Incorrect, misleading, made up facts, or failed to answer the query. |\n\n")
 
         f.write("### The 8 Quality Categories\n")
         f.write("1. **Correctness:** Whether the bot gives the right answer based on past resolved tickets or known support information.\n")

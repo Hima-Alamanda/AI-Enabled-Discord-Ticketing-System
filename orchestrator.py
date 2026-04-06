@@ -48,6 +48,21 @@ class SupportOrchestrator:
         is_status       = bool(re.search(r'\b(AI\d{14}|\d{14})\b', user_message))
         is_ticket_req   = any(x in msg_low for x in ["create ticket", "open ticket", "log ticket", "raise ticket"])
         is_escalate_req = any(x in msg_low for x in ["human", "agent", "call me", "escalate", "technician"])
+        
+        # FIX: "report" and "summary" are too ambiguous for technical support (e.g. "reporting errors").
+        # We only trigger visualization for explicit chart/graph/dashboard keywords or specific ticket reports.
+        is_visualization = any(x in msg_low for x in ["visualiz", "graph", "chart", "plot", "dashboard", "insight", "analytics", "stats", "visualis"])
+        is_report_request = "report" in msg_low and any(y in msg_low for y in ["ticket", "trend", "status", "distribution", "analysis"])
+        is_visualization = is_visualization or is_report_request
+        
+        # BLOCK: If there is technical error context, we only allow visualization IF explicitly requested.
+        is_technical_context = any(x in msg_low for x in ["error", "fail", "issue", "problem", "broken", "message", "sync", "amount"])
+        has_explicit_chart_word = any(x in msg_low for x in ["chart", "graph", "plot", "visualize"])
+        
+        if is_technical_context and not has_explicit_chart_word:
+            is_visualization = False
+
+        is_list_tickets  = any(x in msg_low for x in ["show my tickets", "list my tickets", "my tickets status", "my open tickets", "my tickets"])
 
         # Social intent takes precedence ONLY if it's a short, pure social message.
         # If it's long, it's likely a technical request starting with a greeting.
@@ -108,6 +123,24 @@ class SupportOrchestrator:
                 "intent": "check_status", "urgency": "low",
             })
             log.info("Routed → status_check")
+            return decision
+
+        if is_visualization:
+            decision.update({
+                "message_type": "visualization", "should_search_kb": False,
+                "response_mode": "analytics",
+                "intent": "visualize", "urgency": "low",
+            })
+            log.info("Routed → visualization")
+            return decision
+
+        if is_list_tickets:
+            decision.update({
+                "message_type": "list_tickets", "should_search_kb": False,
+                "response_mode": "tickets",
+                "intent": "list_tickets", "urgency": "low",
+            })
+            log.info("Routed → list_tickets")
             return decision
 
         if is_escalate_req:

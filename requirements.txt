@@ -21,3 +21,7 @@ pdfplumber
 pytesseract
 Pillow
 python-docx
+
+# Visualization
+matplotlib
+seaborn

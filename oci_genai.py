@@ -90,12 +90,12 @@ def get_chat_response(prompt: str, system_prompt: str = None, temperature: float
         # Extract token usage
         usage_obj = getattr(response.data.chat_response, "usage", None)
         if usage_obj:
-            current_call_usage["input_tokens"] = getattr(usage_obj, "prompt_tokens", 0)
-            current_call_usage["output_tokens"] = getattr(usage_obj, "completion_tokens", 0)
-            current_call_usage["total_tokens"] = getattr(usage_obj, "total_tokens", 0)
+            current_call_usage["input_tokens"] = getattr(usage_obj, "prompt_tokens", 0) or 0
+            current_call_usage["output_tokens"] = getattr(usage_obj, "completion_tokens", 0) or 0
+            current_call_usage["total_tokens"] = getattr(usage_obj, "total_tokens", 0) or 0
         else:
-            current_call_usage["input_tokens"] = getattr(response.data.chat_response, 'prompt_token_count', 0)
-            current_call_usage["output_tokens"] = getattr(response.data.chat_response, 'completion_token_count', 0)
+            current_call_usage["input_tokens"] = getattr(response.data.chat_response, 'prompt_token_count', 0) or 0
+            current_call_usage["output_tokens"] = getattr(response.data.chat_response, 'completion_token_count', 0) or 0
             current_call_usage["total_tokens"] = current_call_usage["input_tokens"] + current_call_usage["output_tokens"]
         
         # Update global stats
@@ -109,7 +109,22 @@ def get_chat_response(prompt: str, system_prompt: str = None, temperature: float
             print(f"Output Tokens: {current_call_usage['output_tokens']}")
             print(f"Total Tokens: {current_call_usage['total_tokens']}\n")
 
-        result_text = response.data.chat_response.choices[0].message.content[0].text
+        # Robust result extraction
+        choice = response.data.chat_response.choices[0]
+        result_text = ""
+        
+        # 1. Try Chat Message Content (Latest API)
+        if hasattr(choice, 'message') and choice.message:
+            if choice.message.content and len(choice.message.content) > 0:
+                result_text = choice.message.content[0].text
+        
+        # 2. Try Legacy Text field (If applicable)
+        if not result_text and hasattr(choice, 'text'):
+            result_text = choice.text
+            
+        if not result_text:
+            result_text = "Error: The model returned an empty response or was filtered by safety settings."
+
         if include_usage:
             return result_text, current_call_usage
         return result_text

@@ -191,6 +191,59 @@ def get_all_tickets_df():
     finally:
         if conn: conn.close()
 
+def get_ticket_status_counts():
+    """Returns a distribution of ticket statuses for pie charts."""
+    conn = None
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT status, COUNT(*) FROM tickets GROUP BY status")
+        rows = c.fetchall()
+        return {r[0]: r[1] for r in rows}
+    except Exception as e:
+        print(f"Error fetching status counts: {e}")
+        return {}
+    finally:
+        if conn: conn.close()
+
+def get_ticket_priority_counts():
+    """Returns counts of tickets by priority level."""
+    conn = None
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute("SELECT priority, COUNT(*) FROM tickets GROUP BY priority")
+        rows = c.fetchall()
+        return {r[0]: r[1] for r in rows}
+    except Exception as e:
+        print(f"Error fetching priority counts: {e}")
+        return {}
+    finally:
+        if conn: conn.close()
+
+def get_user_tickets_summary(email):
+    """Retrieves a summarized list of tickets for a specific user (email)."""
+    df = get_tickets_summary_df()
+    if df.empty: return []
+    user_records = df[df['email'].str.lower() == email.lower()]
+    return user_records.to_dict('records')
+
+def get_ticket_volume_trends():
+    """Groups tickets by creation month for charts."""
+    conn = None
+    try:
+        conn = get_connection()
+        query = "SELECT TO_CHAR(created_at, 'YYYY-MM'), COUNT(*) FROM tickets GROUP BY TO_CHAR(created_at, 'YYYY-MM') ORDER BY 1"
+        c = conn.cursor()
+        c.execute(query)
+        rows = c.fetchall()
+        return {r[0]: r[1] for r in rows}
+    except Exception as e:
+        print(f"Error fetching trends: {e}")
+        return {}
+    finally:
+        if conn: conn.close()
+
 def save_ticket(ticket_data):
     conn = get_connection()
     c = conn.cursor()
@@ -779,10 +832,11 @@ def get_tag_analytics():
         conn.close()
 
 
-def search_kb_vectors(query_vector, n_results=3):
+def search_kb_vectors(query_vector, n_results=3, source=None):
     """
     Performs a native Vector Search in Oracle ADW 23ai.
     Uses string conversion for the vector to avoid client-side version requirements (DPI-1050).
+    'source' parameter allows filtering by specific knowledge sources (e.g. 'POC_HYBRID_DOCS').
     """
     conn = None
     try:
@@ -796,15 +850,26 @@ def search_kb_vectors(query_vector, n_results=3):
             v_list = list(query_vector)
         vector_str = "[" + ",".join(map(str, v_list)) + "]"
         
-        # SQL for Vector Search using TO_VECTOR cast to bypass DPI-1050
-        query = """
-            SELECT CONTENT, SOURCE, TITLE, VECTOR_DISTANCE(EMBEDDING, TO_VECTOR(:1), COSINE) as distance
-            FROM KB_VECTORS
-            ORDER BY distance
-            FETCH FIRST :2 ROWS ONLY
-        """
+        # Build SQL based on source filter
+        if source:
+            query = """
+                SELECT CONTENT, SOURCE, TITLE, VECTOR_DISTANCE(EMBEDDING, TO_VECTOR(:1), COSINE) as distance
+                FROM KB_VECTORS
+                WHERE SOURCE = :2
+                ORDER BY distance
+                FETCH FIRST :3 ROWS ONLY
+            """
+            params = [vector_str, source, n_results]
+        else:
+            query = """
+                SELECT CONTENT, SOURCE, TITLE, VECTOR_DISTANCE(EMBEDDING, TO_VECTOR(:1), COSINE) as distance
+                FROM KB_VECTORS
+                ORDER BY distance
+                FETCH FIRST :2 ROWS ONLY
+            """
+            params = [vector_str, n_results]
         
-        c.execute(query, [vector_str, n_results])
+        c.execute(query, params)
         
         results = []
         for row in c.fetchall():
