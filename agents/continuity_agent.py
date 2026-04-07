@@ -90,25 +90,31 @@ class ContinuityAgent:
             log.debug("Continuity → SAME_ISSUE (related keyword match)")
             return "SAME_ISSUE"
 
-        # Clearly Independent technical broad topics 
+        # Detect Clear Domain Shifts (e.g. from SAP to VPN)
         subject = snapshot.get("subject", "").lower()
         tech_terms = [
-            "vpn", "email", "password", "teams", "printer",
-            "wi-fi", "laptop", "monitor", "software", "install", "sap"
+            "vpn", "email", "password", "teams", "printer", "wi-fi", 
+            "laptop", "monitor", "software", "install", "sap", "excel", "access"
         ]
+        
+        # If we find a major technical term that wasn't in the original subject
         found_new_terms = [t for t in tech_terms if t in msg_low and t not in subject]
-
-        if len(msg_low.split()) > 10 and len(found_new_terms) >= 2:
-            log.info("Continuity → NEW_ISSUE (new tech terms: %s)", found_new_terms)
-            return "NEW_ISSUE"
+        
+        if found_new_terms:
+            if len(msg_low.split()) > 6: # If they explained a new problem
+                log.info("Continuity → NEW_ISSUE (Detected new domain: %s)", found_new_terms)
+                return "NEW_ISSUE"
+            else:
+                log.info("Continuity → UNCERTAIN (Short message with new domain: %s)", found_new_terms)
+                return "UNCERTAIN"
 
         # Short vague followups
-        if len(msg_low.split()) < 5:
-            log.debug("Continuity → SAME_ISSUE (short message)")
+        if len(msg_low.split()) < 3: # Reduced from 5 to 3
+            log.debug("Continuity → SAME_ISSUE (very short message)")
             return "SAME_ISSUE"
 
         # Ambiguous shifts
-        uncertain_keywords = ["also", "another issue", "can you check this too", "one more thing"]
+        uncertain_keywords = ["also", "another issue", "can you check this too", "one more thing", "besides"]
         if any(k in msg_low for k in uncertain_keywords):
             log.info("Continuity → UNCERTAIN (ambiguous keyword)")
             return "UNCERTAIN"

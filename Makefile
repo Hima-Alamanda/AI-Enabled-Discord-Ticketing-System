@@ -6,7 +6,7 @@ PYTHONEXE = python3
 PIP       = pip3
 LOAD_ENV  = from dotenv import load_dotenv; load_dotenv();
 
-.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run eval-push clean
+.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run eval-suite eval-report eval-push health zoho-sync zoho-archive clean
 
 help: ## Show implementation dashboard
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,15 @@ db-init: ## Initialize Oracle pool and register support agents
 
 rag-sync: ## Synchronize Vector Store with latest articles
 	$(PYTHONEXE) -c "$(LOAD_ENV) import rag_manager; rag_manager.load_documents_to_db()"
+
+health: ## Run internal system diagnostics (Oracle, GenAI, Bot Status)
+	$(PYTHONEXE) health_manager.py
+
+zoho-sync: ## Sync ACTIVE tickets from Zoho Desk and vectorize into KB
+	$(PYTHONEXE) zoho_sync.py
+
+zoho-archive: ## Sync ARCHIVED tickets from Zoho Desk and vectorize into KB
+	$(PYTHONEXE) zoho_sync.py --archive
 
 
 bot-run: ## Launch the live Discord AI-Assistant bot
@@ -44,9 +53,17 @@ eval-run: ## Generate AI Performance & Mathematical Reports
 	$(PYTHONEXE) evaluations/model_comparison_v2.py
 	$(PYTHONEXE) evaluations/quantitative_eval.py
 
-eval-push: eval-run ## Run & Automatically push LATEST reports to GitHub
+eval-suite: ## Run Comprehensive Prompt Engineering Benchmarking (4 Strategies)
+	$(PYTHONEXE) evaluations/prompt_evaluation_suite.py
+
+eval-report: ## Generate Executive Excel Performance Report from latest results
+	$(PYTHONEXE) evaluations/generate_excel_report.py
+
+eval-push: eval-run eval-suite eval-report ## Run & Automatically push LATEST reports (MD & Excel) to GitHub
 	@echo "Staging latest reports"
 	@git add evaluations/results/*latest*
+	@git add evaluations/results/PROMPT_REPORT.md
+	@git add evaluations/results/EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx
 	@git commit -m "docs: automatic evaluation update $$(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit."
 	@git push origin main
 

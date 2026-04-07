@@ -16,12 +16,16 @@ Each interaction is handled by a team of agents working in sequence:
 *   **Issue Understanding Agent**: The "Analyst." Extracts structured metadata (Category, Urgency, System Type) from human conversations.
 *   **Automation Agent**: The "Operator." Handles automated workflows like ticket creation and database updates.
 *   **Continuity Agent**: The "Memory." Ensures the AI remembers previous context from the chat history.
+*   **Visual Insight Agent**: The "Artist." Generates professional, dark-themed charts (Bar, Pie, Line) to visualize support trends and ticket distribution directly in Discord.
+*   **Health Monitor Agent**: The "Auditor." Real-time watchdog that verifies connectivity to Oracle ADW, OCI GenAI, and ensures the Discord bot process is active.
 *   **Handoff Agent**: The "Summarizer." When human intervention is needed, it drafts a professional technical brief for the technician.
 
 ### Technology Stack
 *   **Intelligence**: OCI Generative AI (Gemini 2.5 Pro / Grok 4.20 Reasoning / Gemini 2.5 Flash)
-*   **Database**: Oracle Autonomous Data Warehouse (ADW)
+*   **Visuals**: Matplotlib & Seaborn (Premium Dark-Themed Analytics)
+*   **Data Lake**: Oracle Autonomous Data Warehouse (ADW) & Oracle Object Storage (for artifacts/images)
 *   **Vector Engine**: Oracle AI Vector Search (Database 23ai)
+*   **Integration**: Zoho Desk (Ticket & Screenshot Synchronization)
 *   **Delivery**: Discord-enabled intelligent bot workspace.
 
 ---
@@ -34,8 +38,10 @@ To make management and testing simple, the system includes a **professional Make
 | :--- | :--- |
 | `make help` | Show this implementation dashboard |
 | `make setup` | Install all Python dependencies & AI model assets |
+| `make health` | **Run System Diagnostics (Oracle, AI, Processes)** |
 | `make db-init` | Initialize Oracle DB pool and register support agents |
 | `make rag-sync` | Synchronize Knowledge Base articles into the Vector Store |
+| `make zoho-sync`| **Sync Active Tickets from Zoho Desk into KB Vector Store** |
 | **`make eval-push`** | **Run Benchmark Evaluations and push Latest Reports to GitHub** |
 | `make bot-run` | Launch the live Discord AI-Assistant |
 | `make bot-status`| Check if the AI bot is currently running |
@@ -62,6 +68,12 @@ The system uses **Oracle Instant Client** for high-performance ADW connections.
     DB_DSN=your_db_high
     COMPARTMENT_ID=ocid1.compartment...
     DISCORD_TOKEN=your_bot_token...
+
+    # Zoho Integation (Optional for Sync)
+    ZOHO_ORG_ID=...
+    ZOHO_CLIENT_ID=...
+    ZOHO_CLIENT_SECRET=...
+    ZOHO_REFRESH_TOKEN=...
     ```
 
 ---
@@ -71,8 +83,21 @@ The system uses **Oracle Instant Client** for high-performance ADW connections.
 We have implemented a rigorous **Automated Evaluation Framework** (located in `/evaluations`) that keeps the project data-driven.
 
 *   **Models Compared**: Google Gemini 2.5 Pro vs. xAI Grok 4.20 Reasoning.
-*   **Metrics**: Correctness, Faithfulness, Actionability, BLEU Score, ROUGE-L, and Latency.
-*   **Clean History Policy**: The system is configured to only track the **LATEST** performance reports in GitHub (via `report_latest.md`), keeping the codebase clean while maintaining a full historical archive locally in the `results/` folder.
+*   **Metrics**: Correctness, Faithfulness, Actionability, BLEU Score, ROUGE-L, BERTScore, and Latency.
+*   **Executive Reporting**: The system generates a multi-sheet **EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx** automatically, featuring heatmapped quality scores, token cost analysis, and model recommendations.
+*   **Clean History Policy**: The system is configured to only track the **LATEST** performance reports in GitHub (via `PROMPT_REPORT.md` and the Excel file), keeping the codebase clean while maintaining a full historical archive locally in the `results/` folder.
+
+
+## AI Visual Analytics & Insights
+
+The system features a **Premium Visual Engine** (via `visualizer.py`) that transforms raw support data into executive-ready charts directly within Discord:
+
+*   **Dark-Theme Presentation**: All charts are optimized for Discord and professional dashboards using a deep-dark `#121212` background.
+*   **Dynamic Charting**:
+    *   **Bar Charts**: For comparing support metrics and agent performance.
+    *   **Donut (Pie) Charts**: For visualizing ticket category distribution.
+    *   **Activity Trends (Line)**: For tracking activity spikes and SLA adherence over time.
+*   **Zero-Overhead Storage**: Charts are generated on-the-fly and stored in the `static/charts/` directory for immediate retrieval.
 
 ---
 

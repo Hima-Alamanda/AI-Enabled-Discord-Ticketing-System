@@ -9,7 +9,7 @@ from openpyxl.formatting.rule import ColorScaleRule
 # --- CONFIGURATION ---
 BASE_PATH = "/Users/himanth/PCB/main_ST_AI/Main/AI-Enabled-Ticketing-System-main 6/evaluations/results/"
 INPUT_CSV = os.path.join(BASE_PATH, "prompt_comparison.csv")
-OUTPUT_EXCEL = os.path.join(BASE_PATH, "EXECUTIVE_PERFORMANCE_REPORT_V10.xlsx")
+OUTPUT_EXCEL = os.path.join(BASE_PATH, "EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx")
 
 # Suppress pandas warnings
 warnings.filterwarnings('ignore')

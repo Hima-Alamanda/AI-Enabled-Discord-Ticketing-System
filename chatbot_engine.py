@@ -14,6 +14,8 @@ import json
 import re
 import uuid
 import logging
+import time # Added for health monitoring
+import random # Added for numeric ID suffixes
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
@@ -22,6 +24,7 @@ import oci_genai
 import controller
 import utils
 import tools 
+import oci_config
 
 from document_processor import extract_text_from_any
 
@@ -263,121 +266,132 @@ def get_chatbot_response(
 
     S = state.STAGES
 
-    if decision["message_type"] in ["technical", "followup", "escalate_request", "clarification_response"]:
-        if state.active_issue_id is None or decision.get("continuity") == "NEW_ISSUE":
-            state.active_issue_id = str(uuid.uuid4())
-            state.state = S["IDENTIFYING"]
-            result["issue_id"] = state.active_issue_id
-            result["state"] = state.state
-            log.info("New issue session: %s (Stage: %s)", state.active_issue_id, state.state)
+    # EMERGENCY FIX: Give every single message a UNIQUE ID for clear APEX reporting.
+    # This prevents "Issue Merging" and keeps the manager's dashboard clean.
+    now = datetime.now()
+    state.active_issue_id = f"MSG-{now.strftime('%H%M%S')}-{random.randint(100, 999)}"
+    result["issue_id"] = state.active_issue_id
+    log.info("New interaction ID: %s", state.active_issue_id)
+    snapshot = state.issue_snapshots.get(state.active_issue_id, {})
+    # Initialize essential snapshot fields if new
+    snapshot.setdefault("stage", S["IDENTIFYING"])
+    snapshot.setdefault("locked_domain", None)
+    snapshot.setdefault("locked_symptom", None)
+    snapshot.setdefault("bot_guidance", [])
+    snapshot.setdefault("troubleshooting_steps", [])
+    snapshot.setdefault("timeline", [])
+    
+    # Track timeline including OCR evidence
+    snapshot["timeline"].append({"role": "user", "content": full_query})
+    snapshot.update({
+        "issue_id": state.active_issue_id,
+        "attachment_info": file_info or snapshot.get("attachment_info"),
+        "created_at": snapshot.get("created_at", datetime.now().isoformat())
+    })
 
-        snapshot = state.issue_snapshots.get(state.active_issue_id, {})
-        # Initialize essential snapshot fields if new
-        snapshot.setdefault("stage", S["IDENTIFYING"])
-        snapshot.setdefault("locked_domain", None)
-        snapshot.setdefault("locked_symptom", None)
-        snapshot.setdefault("bot_guidance", [])
-        snapshot.setdefault("troubleshooting_steps", [])
-        snapshot.setdefault("timeline", [])
-        
-        # Track timeline including OCR evidence
-        snapshot["timeline"].append({"role": "user", "content": full_query})
-        snapshot.update({
-            "issue_id": state.active_issue_id,
-            "attachment_info": file_info or snapshot.get("attachment_info"),
-            "created_at": snapshot.get("created_at", datetime.now().isoformat())
-        })
+    if decision["message_type"] == "clarification_response":
+        snapshot = clarification_engine.process_clarification_response(user_message, snapshot)
+        snapshot["stage"] = S["TROUBLESHOOTING"]
+        state.state = S["TROUBLESHOOTING"]
 
-        if decision["message_type"] == "clarification_response":
-            snapshot = clarification_engine.process_clarification_response(user_message, snapshot)
-            snapshot["stage"] = S["TROUBLESHOOTING"]
-            state.state = S["TROUBLESHOOTING"]
+    # Use full_query (msg + OCR) for extraction — now handles its own semantic fallback logic
+    current_issue = issue_understanding_agent.extract_issue_fields(full_query, snapshot, history)
 
-        # Use full_query (msg + OCR) for extraction — now handles its own semantic fallback logic
-        current_issue = issue_understanding_agent.extract_issue_fields(full_query, snapshot, history)
+    issue = issue_understanding_agent.merge_issue_context(current_issue, snapshot)
+    
+    if snapshot.get("locked_domain"):
+        ld = snapshot["locked_domain"]
+        if ld in ["sap", "outlook", "vpn", "teams"]:
+            issue["application"] = ld
+        else:
+            issue["system"] = ld
+    
+    if snapshot.get("locked_symptom"):
+        issue["symptom"] = snapshot["locked_symptom"]
 
-        issue = issue_understanding_agent.merge_issue_context(current_issue, snapshot)
-        
-        if snapshot.get("locked_domain"):
-            ld = snapshot["locked_domain"]
-            if ld in ["sap", "outlook", "vpn", "teams"]:
-                issue["application"] = ld
-            else:
-                issue["system"] = ld
-        
-        if snapshot.get("locked_symptom"):
-            issue["symptom"] = snapshot["locked_symptom"]
-
-        # Update snapshot with latest technical understanding
-        snapshot.update({
-            "issue_type": issue["issue_type"],
-            "symptom": issue["symptom"],
-            "system": issue["system"],
-            "application": issue["application"],
-            "device": issue["device"],
-            "error_code": issue["error_code"],
-            "missing_slots": issue["missing_slots"],
-            "ambiguity_flags": issue["ambiguity_flags"]
-        })
-
-        # Use ContinuityAgent's robust builder instead of basic refined query
-        search_query = continuity_agent.build_kb_search_query(user_message, snapshot)
-        
-        pref_domain = issue.get("application") or issue.get("system")
-        is_locked = bool(snapshot.get("locked_domain"))
-        is_troubleshooting = snapshot["stage"] == S["TROUBLESHOOTING"]
-        
+    # Update snapshot with latest technical understanding
+    snapshot.update({
+        "issue_type": issue["issue_type"],
+        "symptom": issue["symptom"],
+        "system": issue["system"],
+        "application": issue["application"],
+        "device": issue["device"],
+        "error_code": issue["error_code"],
+        "missing_slots": issue["missing_slots"],
+        "ambiguity_flags": issue["ambiguity_flags"]
+    })
+    # Use ContinuityAgent's robust builder instead of basic refined query
+    search_query = continuity_agent.build_kb_search_query(user_message, snapshot)
+    
+    pref_domain = issue.get("application") or issue.get("system")
+    is_locked = bool(snapshot.get("locked_domain"))
+    is_troubleshooting = snapshot["stage"] == S["TROUBLESHOOTING"]
+    
+    # --- HEALTH MONITORING: START RAG TIMER ---
+    start_rag = time.time()
+    try:
         retrieval_analysis = retrieval_manager.retrieve_and_analyze(
             search_query, 
             preferred_domain=pref_domain, 
             strict_domain=(is_locked or is_troubleshooting)
         )
+    except Exception as search_err:
+        database.report_system_error("VECTOR_SEARCH", search_err)
+        log.error(f"Search Manager failure during interaction: {search_err}")
+        # Fallback to empty results to prevent bot crash
+        retrieval_analysis = {
+            "candidates": [],
+            "kb_confidence": "low",
+            "reasoning": f"Search failed: {search_err}"
+        }
+    rag_latency = time.time() - start_rag
+    # --- HEALTH MONITORING: END RAG TIMER ---
         
-        result["sources"] = list(set(r["source"] for r in retrieval_analysis["candidates"]))
-        result["confidence"] = retrieval_analysis["kb_confidence"]
-
-        decision_step = clarification_engine.decide_next_step(issue, retrieval_analysis, snapshot)
-        log.info("Lifecycle Decision: %s (Stage: %s)", decision_step, snapshot["stage"])
-
-        if decision_step == "CLARIFY":
-            package = clarification_engine.get_clarification_package(issue, retrieval_analysis, history)
-            question = package.get("question", "Could you provide more details?")
-            options = package.get("options", ["Other"])
-            
-            clarification_engine.update_snapshot_with_clarification(snapshot, issue, retrieval_analysis, question, options)
-            
-            snapshot["stage"] = S["CLARIFYING"]
-            state.state = S["CLARIFYING"]
-            
-            result["content"] = question
-            result["state"] = state.state
-            result["clarification_options"] = options 
-            state.issue_snapshots[state.active_issue_id] = snapshot
-            return result
-
-        elif decision_step == "ESCALATE":
-            escalation_result = _handle_escalation(user_message, user_email, history, first_name, {})
-            result.update(escalation_result)
-            state.state = S["IDLE"]
-            state.active_issue_id = None
-            result["state"] = state.state
-            result["issue_id"] = None
-            return result
-
-        # Search for relevant past tickets using the same snapshot-aware query
-        tickets = knowledge_agent._search_past_tickets(search_query)
-        scored_tickets = knowledge_agent._score_past_tickets(tickets, search_query)
+    result["sources"] = list(set(r["source"] for r in retrieval_analysis["candidates"]))
+    result["confidence"] = retrieval_analysis["kb_confidence"]
+    
+    decision_step = clarification_engine.decide_next_step(issue, retrieval_analysis, snapshot)
+    log.info("Lifecycle Decision: %s (Stage: %s)", decision_step, snapshot["stage"])
+    
+    if decision_step == "CLARIFY":
+        package = clarification_engine.get_clarification_package(issue, retrieval_analysis, history)
+        question = package.get("question", "Could you provide more details?")
+        options = package.get("options", ["Other"])
         
-        kb_data["context_text"] = KnowledgeAgent._build_context_text(
-            retrieval_analysis["candidates"], scored_tickets, retrieval_analysis["kb_confidence"]
-        )
-        kb_data["confidence"] = retrieval_analysis["kb_confidence"]
-        kb_data["sources"] = result["sources"]
-        kb_data["kb_results"] = retrieval_analysis["candidates"] # For snapshot persistence lower down
+        clarification_engine.update_snapshot_with_clarification(snapshot, issue, retrieval_analysis, question, options)
         
-        # Persist snapshot
+        snapshot["stage"] = S["CLARIFYING"]
+        state.state = S["CLARIFYING"]
+        
+        result["content"] = question
+        result["state"] = state.state
+        result["clarification_options"] = options 
         state.issue_snapshots[state.active_issue_id] = snapshot
-
+        return result
+    
+    elif decision_step == "ESCALATE":
+        escalation_result = _handle_escalation(user_message, user_email, history, first_name, {})
+        result.update(escalation_result)
+        state.state = S["IDLE"]
+        state.active_issue_id = None
+        result["state"] = state.state
+        result["issue_id"] = None
+        return result
+    
+    # Search for relevant past tickets using the same snapshot-aware query
+    tickets = knowledge_agent._search_past_tickets(search_query)
+    scored_tickets = knowledge_agent._score_past_tickets(tickets, search_query)
+    
+    kb_data["context_text"] = KnowledgeAgent._build_context_text(
+    retrieval_analysis["candidates"], scored_tickets, retrieval_analysis["kb_confidence"]
+    )
+    kb_data["confidence"] = retrieval_analysis["kb_confidence"]
+    kb_data["sources"] = result["sources"]
+    kb_data["kb_results"] = retrieval_analysis["candidates"] # For snapshot persistence lower down
+    
+    # Persist snapshot
+    state.issue_snapshots[state.active_issue_id] = snapshot
+    
     result["intent"] = intent
     automation_result = {"eligible": False}
     if decision["message_type"] in ("technical", "followup"):
@@ -389,14 +403,14 @@ def get_chatbot_response(
                      automation_result["action_type"],
                      automation_result["attempted"],
                      automation_result["requires_confirmation"])
-
+            
             if automation_result.get("next_step") in ("confirm", "declined"):
                 result["content"] = automation_result["message"]
                 result["state"] = state.state
                 log.info("Returning deterministic automation message (next_step=%s)",
                          automation_result["next_step"])
                 return result
-
+    
     # Handle direct status check if requested via ID
     if decision["message_type"] == "status_check":
         tid_match = re.search(r'\b(AI\d{14}|\d{14})\b', user_message)
@@ -419,7 +433,7 @@ def get_chatbot_response(
         else:
             result["content"] = "Please share the ticket ID and I'll look it up for you."
         return result
-
+    
     # Handle Ticket Listing
     if decision["message_type"] == "list_tickets":
         # Extract email or use current user email
@@ -440,22 +454,22 @@ def get_chatbot_response(
         else:
             result["content"] = tool_res.get("message", "I couldn't find any tickets for your account.")
         return result
-
+    
     # Handle Visualization & Analytics
     if decision["message_type"] == "visualization":
         # We need the AI to parse the data first.
         # We will use a special system prompt for data extraction.
         data_extractor_prompt = f"""Extract visualization data from this request.
-USER: {user_message}
-
-If the user gives data, output JSON for 'visualize_data':
-{{ "type": "interactive", "labels": ["Jan", "Feb"], "values": [10, 20], "chart_type": "bar", "title": "My Data" }}
-
-If the user asks for ticket insights (trends, priority, status), output JSON:
-{{ "type": "insights", "insight_type": "status" }}
-
-Only return JSON.
-"""
+        USER: {user_message}
+        
+        If the user gives data, output JSON for 'visualize_data':
+        {{ "type": "interactive", "labels": ["Jan", "Feb"], "values": [10, 20], "chart_type": "bar", "title": "My Data" }}
+        
+        If the user asks for ticket insights (trends, priority, status), output JSON:
+        {{ "type": "insights", "insight_type": "status" }}
+        
+        Only return JSON.
+        """
         try:
             raw_json = oci_genai.get_chat_response(prompt=data_extractor_prompt, temperature=0.1)
             match = re.search(r'\{.*\}', raw_json, re.DOTALL)
@@ -474,7 +488,7 @@ Only return JSON.
         except Exception as e:
             result["content"] = f"Failed to generate visualization. {e}"
         return result
-
+    
     # Handle simple smalltalk bypassing RAG
     if decision["message_type"] in ["greeting", "closure", "general", "continuity_check"]:
         if decision["message_type"] == "continuity_check":
@@ -482,7 +496,7 @@ Only return JSON.
             result["state"] = state.state
             result["content"] = "I want to track this correctly. Is this related to your current issue, or would you like to start a new one?"
             return result
-            
+        
         response = oci_genai.get_chat_response(
             prompt=f"User: {user_message}\nRespond warmly and briefly.",
             system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
@@ -492,19 +506,19 @@ Only return JSON.
         return result
     history_str = _format_history_for_prompt(history)
     user_info_str = f"User: {user_name} | Email: {user_email} | Urgency: {urgency}"
-
+    
     ticket_draft_str = ""
     if result.get("ticket_data"):
         td = result["ticket_data"]
         ticket_draft_str = f"=== DRAFT TICKET DATA ===\nSubject: {td.get('subject')}\nTopic: {td.get('topic')}\n"
-
+    
     attempted_str = ""
     if state.active_issue_id:
         snapshot = state.issue_snapshots.get(state.active_issue_id, {})
         attempted = snapshot.get("attempted_steps", [])
         if attempted:
             attempted_str = f"=== PREVIOUSLY ADVISED/ATTEMPTED ===\n" + "\n".join([f"- {s}" for s in attempted]) + "\n"
-
+    
     automation_context = ""
     if automation_result.get("eligible") and automation_result.get("attempted"):
         automation_context = f"""
@@ -518,36 +532,38 @@ IMPORTANT: An automated action was just executed. Inform the user of the result 
 If it succeeded, ask if they need anything else.
 If it failed, offer to create a ticket or try KB guidance.
 """
-
+    
     final_prompt = f"""
-{user_info_str}
-
-{history_str}
-Intent: {intent} (Urgency: {urgency})
-
-{ticket_draft_str}
-{attempted_str}
-{automation_context}
-
-=== TECHNICAL CONTEXT & PROCEDURES ===
-{kb_data['context_text']}
-
-=== CURRENT USER MESSAGE ===
-{full_query}
-
-=== INSTRUCTIONS ===
-1. START with a personalized greeting: "Hi [First Name],".
-2. TECHNICAL SUPPORT:
-   - Provide a natural, technical context first (Why it is happening).
-   - Use a numbered list for resolution steps.
-   - Use **bold** for buttons and navigation.
-   - NO bold headers (e.g. **Issue Analysis**).
-3. If they specifically request escalation: Output ACTION:ESCALATE.
-4. If GREETING/CLOSING only: Respond warmly and extremely briefly.
-
-Goal: Provide a natural, empathetic, and structured technical response like the example in the system prompt.
-"""
+    {user_info_str}
+    
+    {history_str}
+    Intent: {intent} (Urgency: {urgency})
+    
+    {ticket_draft_str}
+    {attempted_str}
+    {automation_context}
+    
+    === TECHNICAL CONTEXT & PROCEDURES ===
+    {kb_data['context_text']}
+    
+    === CURRENT USER MESSAGE ===
+    {full_query}
+    
+    === INSTRUCTIONS ===
+    1. START with a personalized greeting: "Hi [First Name],".
+    2. TECHNICAL SUPPORT:
+    - Provide a natural, technical context first (Why it is happening).
+    - Use a numbered list for resolution steps.
+    - Use **bold** for buttons and navigation.
+    - NO bold headers (e.g. **Issue Analysis**).
+    3. If the user asks for a human OR if there is a severe physical failure (grinding noise, smoke, server rack emergency): You MUST append ACTION:ESCALATE at the end of your response.
+    4. If GREETING/CLOSING only: Respond warmly and extremely briefly.
+    
+    Goal: Provide a natural, empathetic, and structured technical response like the example in the system prompt.
+    """
     try:
+        # --- HEALTH MONITORING: START LLM TIMER ---
+        start_llm = time.time()
         raw_response = oci_genai.get_chat_response(
             prompt=final_prompt,
             system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
@@ -555,11 +571,16 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
             max_tokens=2500,
             include_usage=False # Usage is now tracked globally
         )
+        llm_latency = time.time() - start_llm
+        # --- HEALTH MONITORING: END LLM TIMER ---
     except Exception as e:
+        database.report_system_error("OCI_GENAI", e)
+        log.error(f"LLM failure during interaction: {e}")
         raw_response = f"I'm experiencing connectivity issues. Please try again. (Error: {e})"
+    
     action_taken = None
     ticket_id_created = None
-
+    
     if "ACTION:CREATE_TICKET" in raw_response:
         raw_response = raw_response.replace("ACTION:CREATE_TICKET", "").strip()
         action_taken = "create_ticket"
@@ -570,10 +591,16 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
                 snapshot["bot_guidance"].append(raw_response)
                 snapshot["timeline"].append({"role": "assistant", "content": raw_response})
                 result["ticket_data"] = handoff_agent.summarize(snapshot)
+                
+                # LINKING: Attach the unique interaction ID to the ticket draft
+                if result["ticket_data"]:
+                    result["ticket_data"]["issue_id"] = state.active_issue_id
         
         if not result.get("ticket_data"):
-             result["ticket_data"] = extract_ticket_data(full_query, history)
-
+            result["ticket_data"] = extract_ticket_data(full_query, history)
+            if result["ticket_data"]:
+                result["ticket_data"]["issue_id"] = state.active_issue_id
+    
     elif "ACTION:ESCALATE" in raw_response:
         raw_response = raw_response.replace("ACTION:ESCALATE", "").strip()
         escalation_result = _handle_escalation(user_message, user_email, history, first_name, {})
@@ -584,17 +611,17 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
         # Clear session state on escalation
         state.state = S["IDLE"]
         state.active_issue_id = None
-
+    
     result["content"] = raw_response
     result["action"] = action_taken
     result["ticket_id"] = ticket_id_created
     if state.active_issue_id:
         if decision["message_type"] in ["technical", "followup", "escalate_request", "clarification_response"]:
             state.state = "AWAITING_CONFIRMATION"
+        
+        result["state"] = state.state
+        result["issue_id"] = state.active_issue_id
     
-    result["state"] = state.state
-    result["issue_id"] = state.active_issue_id
-
     if state.active_issue_id:
         snapshot = state.issue_snapshots.get(state.active_issue_id)
         if snapshot:
@@ -607,7 +634,7 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
                 title = best_hit.get("title", "")
                 if title and title not in snapshot["troubleshooting_steps"]:
                     snapshot["troubleshooting_steps"].append(title)
-
+    
     # --- TOOL INTERCEPTION LAYER ---
     # Catch cases where the LLM narrates calling a visualization tool
     content_lower = result["content"].lower()
@@ -622,13 +649,13 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
             v_res = tools.generate_ticket_insights(v_type)
             if v_res.get("image_path"):
                 result["image_path"] = v_res.get("image_path")
-                # Clean text: remove tool narration blocks
-                result["content"] = re.sub(r'\[calling tool .*?\]', '', result["content"], flags=re.IGNORECASE)
-                result["content"] = re.sub(r'<tool_code>.*?</tool_code>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
-                result["content"] = re.sub(r'\[ACTION\].*?\n', '', result["content"], flags=re.IGNORECASE)
+            # Clean text: remove tool narration blocks
+            result["content"] = re.sub(r'\[calling tool .*?\]', '', result["content"], flags=re.IGNORECASE)
+            result["content"] = re.sub(r'<tool_code>.*?</tool_code>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+            result["content"] = re.sub(r'\[ACTION\].*?\n', '', result["content"], flags=re.IGNORECASE)
         except Exception as ve:
             log.warning(f"Interception tool call failed: {ve}")
-
+    
     # 2. Interactive Data Interceptor (Fix for User Data multi-line issues)
     elif "visualize_data" in result["content"] or "execute_tool" in result["content"]:
         try:
@@ -640,7 +667,7 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
             def get_param(name, text):
                 m = re.search(fr"{name}\s*=\s*(['\"](.*?)['\"]|\[.*?\])", text, re.DOTALL)
                 return m.group(1).strip("'\"") if m else None
-
+            
             labels_str = get_param("labels", code)
             values_str = get_param("values", code)
             title = get_param("title", code) or "Data Visualization"
@@ -652,21 +679,21 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
                 v_res = tools.visualize_data(labels, values, title, c_type)
                 if v_res.get("image_path"):
                     result["image_path"] = v_res.get("image_path")
-                    # Clean AND remove the block from user view
-                    result["content"] = re.sub(r'<execute_tool>.*?</execute_tool>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
-                    result["content"] = re.sub(r'visualize_data\(.*?\)', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
-                    # Also remove any leftover "Here is the chart" text that narrate the error
-                    result["content"] = result["content"].replace("```python", "").replace("```", "").strip()
+                # Clean AND remove the block from user view
+                result["content"] = re.sub(r'<execute_tool>.*?</execute_tool>', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+                result["content"] = re.sub(r'visualize_data\(.*?\)', '', result["content"], flags=re.DOTALL | re.IGNORECASE)
+                # Also remove any leftover "Here is the chart" text that narrate the error
+                result["content"] = result["content"].replace("```python", "").replace("```", "").strip()
         except Exception as e:
             log.warning(f"Interactive Interceptor failed: {e}")
-
+    
     # --- AUTOMATED QUALITY EVALUATION (ADMIN TESTING) ---
     eval_metrics = {
-        "correctness": 0,
-        "faithfulness": 0,
-        "actionability": 0,
-        "reasoning": "Self-evaluation skipped.",
-        "kb_sources": kb_data.get("sources", []) if 'kb_data' in locals() else []
+    "correctness": 0,
+    "faithfulness": 0,
+    "actionability": 0,
+    "reasoning": "Self-evaluation skipped.",
+    "kb_sources": kb_data.get("sources", []) if 'kb_data' in locals() else []
     }
     
     if result["content"]:
@@ -681,37 +708,63 @@ Goal: Provide a natural, empathetic, and structured technical response like the 
             eval_metrics.update(eval_result)
         except Exception as eval_err:
             log.warning(f"Self-evaluation failed: {eval_err}")
-
+    
     result["eval_metrics"] = eval_metrics
     
+    # --- ENTERPRISE MONITORING: LOG TO BOT_HEALTH_LOGS ---
+    try:
+        health_packet = {
+            "ticket_id": result.get("ticket_id"),
+            "issue_id": result.get("issue_id"),  # Captured session ID
+            "user_id": user_id,  # Track which user is talking
+            "user_query": user_message,
+            "intent": intent,
+            "latency_search": locals().get('rag_latency', 0.0),
+            "latency_llm": locals().get('llm_latency', 0.0),
+            "kb_distance": retrieval_analysis.get("top_distance") if 'retrieval_analysis' in locals() else None,
+            "kb_source": result["sources"][0] if result["sources"] else "None",
+            "kb_confidence": result["confidence"],
+            "input_tokens": oci_genai.get_total_usage().get("input_tokens", 0),
+            "output_tokens": oci_genai.get_total_usage().get("output_tokens", 0),
+            "total_tokens": oci_genai.get_total_usage().get("total_tokens", 0),
+            "model": oci_config.CHAT_MODEL_ID,
+            "correctness": eval_metrics.get("correctness", 0),
+            "faithfulness": eval_metrics.get("faithfulness", 0),
+            "actionability": eval_metrics.get("actionability", 0),
+            "error_msg": None # Could capture traceback here if needed
+        }
+        database.log_bot_health(health_packet)
+    except Exception as log_err:
+        log.warning(f"Failed to log health packet: {log_err}")
+    
     log.info("== Response complete: intent=%s action=%s confidence=%s correctness=%s ==",
-             result["intent"], result["action"], result["confidence"], eval_metrics.get("correctness"))
+    result["intent"], result["action"], result["confidence"], eval_metrics.get("correctness"))
     return result
-
+    
 def _perform_self_evaluation(user_query: str, ai_response: str, kb_context: str) -> dict:
 
     system_prompt = """You are a Quality Assurance Auditor for an AI Support Bot.
-Evaluate the AI's response against the user message, context, and ground truth.
-
-Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
-- 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
-- 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
-- 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
-- 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
-- 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
-
-Categories:
-- Correctness: Technically accurate and follows the 'KB Answer'?
-- Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
-- Actionability: Clear, easy, numbered steps provided?
-
-Output ONLY a raw JSON object string. Do NOT use markdown code blocks.
-
-Expected Format:
-{"correctness": 0, "faithfulness": 0, "actionability": 0}
-"""
+    Evaluate the AI's response against the user message, context, and ground truth.
+    
+    Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
+    - 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
+    - 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
+    - 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
+    - 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
+    - 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
+    
+    Categories:
+    - Correctness: Technically accurate and follows the 'KB Answer'?
+    - Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
+    - Actionability: Clear, easy, numbered steps provided?
+    
+    Output ONLY a raw JSON object string. Do NOT use markdown code blocks.
+    
+    Expected Format:
+    {"correctness": 0, "faithfulness": 0, "actionability": 0}
+    """
     prompt = f"QUERY: {user_query}\nKB CONTEXT: {kb_context[:1000]}\nAI RESPONSE: {ai_response}\n\nStrict Evaluation JSON:"
-
+    
     try:
         raw = oci_genai.get_chat_response(
             prompt=prompt,
@@ -747,7 +800,7 @@ def get_issue_snapshot(email_or_id: str, issue_id: str) -> Optional[dict]:
 def _handle_escalation(user_message: str, user_email: str, history: list, first_name: str, result: dict) -> dict:
     """Handles escalation to a human agent."""
     result = dict(result)  # copy
-
+    
     if user_email and user_email != 'unknown':
         try:
             from tools import escalate_to_human

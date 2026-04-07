@@ -6,6 +6,7 @@ import datetime
 import re
 import uuid
 import ast
+import oci_config
 
 DB_USER = "EDI_TEST"
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -268,24 +269,24 @@ def save_ticket(ticket_data):
         ticket_data.get('version'), ticket_data.get('connected_systems'),
         ticket_data.get('customer_case_ref'), ticket_data.get('hypercare'),
         ticket_data.get('assigned_agent_id'), ticket_data.get('rca'),
+        ticket_data.get('issue_id'), # NEW: The MSG- interaction ID
         ticket_data['ticket_id']
     )
 
     if exists:
-        # Never overwrite attachment with NULL — if attachment is not provided by the caller
-        # (e.g. after a re-fetch from get_ticket_by_id), keep whatever is already in the DB.
         attachment_val = ticket_data.get('attachment')
         if attachment_val is None:
             query = """UPDATE tickets SET description=:1, topic=:2, priority=:3, status=:4, 
                        resolution_time=:5, user_id=:6, email=:7, subject=:8, partner=:9, 
                        auto_tags=:10, instance=:11, deployment_type=:12, 
                        ticket_type=:13, version=:14, connected_systems=:15, customer_case_ref=:16, 
-                       hypercare=:17, assigned_agent_id=:18, rca=:19, updated_at=SYSTIMESTAMP WHERE ticket_id=:20"""
+                       hypercare=:17, assigned_agent_id=:18, rca=:19, issue_id=:20, updated_at=SYSTIMESTAMP WHERE ticket_id=:21"""
             update_params = (
                 params[0], params[1], params[2], params[3], params[4],
                 params[5], params[6], params[7], params[8],
                 params[10], params[11], params[12], params[13], params[14],
                 params[15], params[16], params[17], params[18], params[19],
+                params[20], # issue_id
                 ticket_data['ticket_id']
             )
         else:
@@ -293,7 +294,7 @@ def save_ticket(ticket_data):
                        resolution_time=:5, user_id=:6, email=:7, subject=:8, partner=:9, 
                        attachment=:10, auto_tags=:11, instance=:12, deployment_type=:13, 
                        ticket_type=:14, version=:15, connected_systems=:16, customer_case_ref=:17, 
-                       hypercare=:18, assigned_agent_id=:19, rca=:20, updated_at=SYSTIMESTAMP WHERE ticket_id=:21"""
+                       hypercare=:18, assigned_agent_id=:19, rca=:20, issue_id=:21, updated_at=SYSTIMESTAMP WHERE ticket_id=:22"""
             update_params = params
         c.execute(query, update_params)
     else:
@@ -302,15 +303,27 @@ def save_ticket(ticket_data):
             ticket_data['ticket_id'], params[0], params[1], params[2], params[3],
             params[4], params[5], params[6], params[7], params[8],
             params[9], params[10], params[11], params[12], params[13],
-            params[14], params[15], params[16], params[17], params[18], params[19]
+            params[14], params[15], params[16], params[17], params[18], params[19],
+            params[20]  # issue_id
         )
         query = """INSERT INTO tickets (ticket_id, description, topic, priority, status, 
                    resolution_time, user_id, email, subject, partner, attachment, auto_tags, 
                    instance, deployment_type, ticket_type, version, connected_systems, 
-                   customer_case_ref, hypercare, assigned_agent_id, rca, created_at, updated_at) 
-                   VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, :12, :13, :14, :15, :16, :17, :18, :19, :20, :21, SYSTIMESTAMP, SYSTIMESTAMP)"""
+                   customer_case_ref, hypercare, assigned_agent_id, rca, issue_id, created_at, updated_at) 
+                   VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, :12, :13, :14, :15, :16, :17, :18, :19, :20, :21, :22, SYSTIMESTAMP, SYSTIMESTAMP)"""
         c.execute(query, insert_params)
     
+    # --- SYNC: Back-fill the ticket_id into the BOT_HEALTH_LOGS table ---
+    if ticket_data.get('issue_id'):
+        try:
+            c.execute(
+                "UPDATE BOT_HEALTH_LOGS SET TICKET_ID = :1 WHERE ISSUE_ID = :2",
+                (ticket_data['ticket_id'], ticket_data['issue_id'])
+            )
+            print(f"[DB Sync] Linked Ticket {ticket_data['ticket_id']} back to Interaction {ticket_data['issue_id']}")
+        except Exception as sync_err:
+            print(f"[DB Sync Warning] Failed to link ticket to log: {sync_err}")
+
     conn.commit()
     conn.close()
 
@@ -942,12 +955,84 @@ def search_similar_resolved_tickets(query: str, limit: int = 3) -> list:
             })
         return results
 
+
+
+
+
     except Exception as e:
         print(f"[DB] search_similar_resolved_tickets error: {e}")
         return []
+
+def log_bot_health(health_data):
+    """
+    Saves a complete bot health & evaluation record to the database.
+    health_data : dict containing all log fields captured during chatbot_engine.py execution.
+    """
+    conn = None
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        
+        query = """
+            INSERT INTO BOT_HEALTH_LOGS (
+                TICKET_ID, ISSUE_ID, USER_ID, USER_QUERY, QUERY_INTENT, LATENCY_SEARCH, 
+                LATENCY_LLM, KB_DISTANCE, KB_SOURCE_USED, KB_CONFIDENCE, 
+                INPUT_TOKENS, OUTPUT_TOKENS, TOTAL_TOKENS, MODEL_USED,
+                SCORE_CORRECTNESS, SCORE_FAITHFULNESS, SCORE_ACTIONABILITY, ERROR_MSG
+            ) VALUES (
+                :1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, :12, :13, :14, :15, :16, :17, :18
+            )
+        """
+        
+        # Clean query text for DB storage (truncate to avoid ORA errors)
+        query_text = str(health_data.get('user_query', ''))[:4000]
+        
+        params = (
+            health_data.get('ticket_id'), 
+            health_data.get('issue_id'), # The conversation session ID
+            health_data.get('user_id'),   # Track who is speaking
+            query_text,
+            health_data.get('intent', 'unknown'), 
+            health_data.get('latency_search', 0.0),
+            health_data.get('latency_llm', 0.0), 
+            health_data.get('kb_distance'), 
+            str(health_data.get('kb_source', ''))[:500], 
+            health_data.get('kb_confidence', 'low'),
+            health_data.get('input_tokens', 0), 
+            health_data.get('output_tokens', 0),
+            health_data.get('total_tokens', 0), 
+            health_data.get('model', oci_config.CHAT_MODEL_ID),
+            health_data.get('correctness', 0), 
+            health_data.get('faithfulness', 0),
+            health_data.get('actionability', 0), 
+            str(health_data.get('error_msg', ''))[:4000]
+        )
+        
+        c.execute(query, params)
+        conn.commit()
+    except Exception as e:
+        print(f"[Health Log Error] Failed to insert log: {e}")
     finally:
-        if conn:
-            conn.close()
+        if conn: conn.close()
+
+
+def report_system_error(service_name, error_msg):
+    """
+    Instantly marks a service as OFFLINE in the dashboard when a runtime error occurs.
+    """
+    conn = None
+    try:
+        conn = database.get_connection() # Use already initialized or get new
+        c = conn.cursor()
+        c.execute(
+            "UPDATE SYSTEM_HEALTH SET STATUS = 'OFFLINE', ERROR_MSG = :1, LAST_CHECKED = SYSTIMESTAMP WHERE SERVICE_NAME = :2",
+            (str(error_msg)[:4000], service_name)
+        )
+        conn.commit()
+    except:
+        pass
+    finally:
+        if conn: conn.close()
 
 
     
