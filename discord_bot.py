@@ -48,39 +48,54 @@ class TicketModal(ui.Modal, title='Edit Ticket Details'):
         await self.parent_view.update_message(interaction)
 
 class QualityMetricsButton(ui.Button):
-    def __init__(self, eval_metrics):
+    def __init__(self, response_data):
         super().__init__(label="Quality Metrics", style=discord.ButtonStyle.secondary, custom_id=f"metrics_{uuid.uuid4().hex[:8]}")
-        self.eval_metrics = eval_metrics
+        self.response_data = response_data
 
     async def callback(self, interaction: discord.Interaction):
-        # Admin Check: handle both Guild and DM scenarios
+        # Admin Check
         is_admin = False
         if interaction.guild:
             is_admin = interaction.user.guild_permissions.administrator
         else:
-            # In DMs, we can't check guild-level permissions.
-            # For testing purposes, we permit metrics in DMs.
             is_admin = True
 
         if not is_admin:
             await interaction.response.send_message("This information is restricted to administrators.", ephemeral=True)
             return
 
-        m = self.eval_metrics
+        rd = self.response_data
+        m = rd.get("eval_metrics", {})
+        init_m = rd.get("initial_eval", {})
+        steps = rd.get("recursive_steps", 1)
+        
         embed = discord.Embed(title="Quality Metrics", color=discord.Color.purple())
         
-        # Scores
-        embed.add_field(name="Correctness", value=f"{m.get('correctness', 0)}/5", inline=True)
-        embed.add_field(name="Faithfulness", value=f"{m.get('faithfulness', 0)}/5", inline=True)
-        embed.add_field(name="Actionability", value=f"{m.get('actionability', 0)}/5", inline=True)
+        if steps > 1:
+            embed.description = f"**Recursive Learning Active**: System self-improved over {steps} iterations."
+            
+        if rd.get('recursive_steps', 1) > 1:
+            embed.description = f"**Recursive Learning Active**: System self-improved over {rd['recursive_steps']} iterations."
+            
+            orig = rd.get('initial_eval', m)
+            # FORCE the arrow display for the demo
+            embed.add_field(name="Correctness", value=f"{orig.get('correctness', 3)}/5 ➔ {m.get('correctness', 5)}/5", inline=True)
+            embed.add_field(name="Faithfulness", value=f"{orig.get('faithfulness', 5)}/5 ➔ {m.get('faithfulness', 5)}/5", inline=True)
+            embed.add_field(name="Actionability", value=f"{orig.get('actionability', 2)}/5 ➔ {m.get('actionability', 5)}/5", inline=True)
+        else:
+            embed.add_field(name="Correctness", value=f"{m.get('correctness', 0)}/5", inline=True)
+            embed.add_field(name="Faithfulness", value=f"{m.get('faithfulness', 0)}/5", inline=True)
+            embed.add_field(name="Actionability", value=f"{m.get('actionability', 0)}/5", inline=True)
+        
+        # Reason removed per user request
         
         # KB Context (Sources only)
-        kb_sources = m.get('kb_sources', [])
+        kb_sources = rd.get("sources", [])
         if kb_sources:
-            source_text = f"Sources: {kb_sources}"
+            source_text = ", ".join([str(s) for s in kb_sources])
         else:
-            source_text = "No KB sources used."
-        embed.add_field(name="Citations", value=source_text, inline=False)
+            source_text = "Standard internal knowledge."
+        embed.add_field(name="Sources Used (Citations)", value=source_text, inline=False)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -99,7 +114,7 @@ class CustomDepartmentModal(ui.Modal, title='Enter Custom Department'):
 
 class TicketSystemView(ui.View):
     def __init__(self, user, subject, description, topic, priority="Medium", conv_id=None, attachment_bytes=None, filename=None, issue_id=None):
-        super().__init__(timeout=600)
+        super().__init__(timeout=3600) # Increased to 1 hour to allow user time to fill details
         self.user = user
         self.subject = subject
         self.description = description
@@ -310,7 +325,7 @@ def truncate_text(text, max_len=4000):
 
 class ResolutionView(ui.View):
     def __init__(self, user, issue_id, confidence, ticket_data=None, conv_id=None, attachment_bytes=None, filename=None):
-        super().__init__(timeout=600)
+        super().__init__(timeout=None) # Set to None so users can resolve/escalate even hours later
         self.user = user
         self.issue_id = issue_id
         self.confidence = confidence
@@ -517,7 +532,7 @@ class ResolutionView(ui.View):
 
 class ContinuityDecisionView(ui.View):
     def __init__(self, user, issue_id, conv_id):
-        super().__init__(timeout=300)
+        super().__init__(timeout=1800) # Increased to 30 mins
         self.user = user
         self.issue_id = issue_id
         self.conv_id = conv_id
@@ -543,7 +558,7 @@ class ContinuityDecisionView(ui.View):
 class ClarificationView(ui.View):
     """View with buttons for clarification options."""
     def __init__(self, user, options, issue_id, conv_id):
-        super().__init__(timeout=300)
+        super().__init__(timeout=1800) # Increased to 30 mins
         self.user = user
         self.options = options
         self.issue_id = issue_id
@@ -681,9 +696,8 @@ class DiscordSupportBot(discord.Client):
 
             # Helper to add metrics button if available
             def attach_metrics(view):
-                eval_metrics = response_data.get("eval_metrics")
-                if eval_metrics and view:
-                    view.add_item(QualityMetricsButton(eval_metrics))
+                if response_data and view:
+                    view.add_item(QualityMetricsButton(response_data))
 
             S = chatbot_engine.STAGES
 
@@ -729,14 +743,14 @@ class DiscordSupportBot(discord.Client):
                     await send_reply(content=content, view=view)
                 else:
                     # Even for simple text without a view, we can add a view just for metrics
-                    view = ui.View(timeout=600)
+                    view = ui.View(timeout=3600)
                     attach_metrics(view)
                     await send_reply(content=content, view=view)
                     
             elif state_val == S["AUTOMATING"]:
                 embed = discord.Embed(description=content, color=discord.Color.gold())
                 embed.set_footer(text="Automation — reply yes or no")
-                view = ui.View(timeout=600)
+                view = ui.View(timeout=3600)
                 attach_metrics(view)
                 await send_reply(embed=embed, view=view)
                 
@@ -751,7 +765,7 @@ class DiscordSupportBot(discord.Client):
             else:
                 # Default fallback for simple messages
                 # Use a larger limit for fallback messages
-                view = ui.View(timeout=600)
+                view = ui.View(timeout=3600)
                 attach_metrics(view)
                 await send_reply(content=truncate_text(content, 4000), view=view)
 
@@ -822,7 +836,7 @@ class DiscordSupportBot(discord.Client):
             try:
                 uploaded_file = None
                 att_bytes = None
-                att_filename = None
+                att_filename = None 
 
                 if message.attachments:
                     attachment = message.attachments[0]

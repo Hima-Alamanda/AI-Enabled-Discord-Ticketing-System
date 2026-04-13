@@ -42,7 +42,8 @@ class SupportOrchestrator:
             "summary":             "",
         }
 
-        is_greeting     = any(msg_low.startswith(x) for x in ["hi", "hello", "hey", "good morning", "good afternoon"])
+        # Precise word-boundary check for greetings to avoid matching names like 'Himanth'
+        is_greeting = any(re.search(fr"\b{re.escape(x)}\b", msg_low) for x in ["hi", "hello", "hey", "good morning", "good afternoon"])
         is_closure      = any(x in msg_low for x in ["it works", "it's working", "its working", "resolved", "fixed", "thanks", "thank you", "worked"])
         is_general      = any(x in msg_low for x in ["how are you", "what are you doing", "who are you"])
         is_status       = bool(re.search(r'\b(AI\d{14}|\d{14})\b', user_message))

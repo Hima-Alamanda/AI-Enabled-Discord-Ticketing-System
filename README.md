@@ -6,6 +6,8 @@ A state-of-the-art, multi-agent support ecosystem powered by **Oracle Cloud Infr
 
 ## System Architecture & AI Intelligence
 
+![System Architecture](architecture.png)
+
 The system operates on a modular **"Brain & Body"** paradigm, utilizing a fleet of specialized AI agents built with OCI Generative AI.
 
 ### Specialized AI Agent Roles (The Brains)
@@ -103,10 +105,12 @@ The system features a **Premium Visual Engine** (via `visualizer.py`) that trans
 
 ## Workflow
 
-1.  **Clone** the repository.
-2.  **Setup Environment**: Place your `oci_config`, `Wallet_EDI`, and `.env` in the root.
-3.  **Bootstrap**: Run `make setup` and `make db-init`.
-4.  **Analyze**: Run `make eval-push` to see how our latest AI models are performing against the benchmark dataset.
-5.  **Test**: Start the bot with `make bot-run`.
+1.  **Clone** the repository and install system dependencies.
+2.  **Setup Environment**: Configure your `.env`, `oci_config`, and `Wallet_EDI/` in the root.
+3.  **Bootstrap**: Run `make setup` and `make db-init` to initialize Python assets and the Oracle pool.
+4.  **Verify State**: Run **`make health`** to confirm the connectivity between the Oracle DB, OCI Generative AI, and the local workspace.
+5.  **Ingest Content**: Run **`make zoho-sync`** to synchronize and vectorize production tickets into the AI's long-term memory.
+6.  **Analyze & Benchmark**: Run **`make eval-push`** to execute the prompt strategy audit and generate the latest **EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx**.
+7.  **Live Deployment**: Launch the Discord Assistant with `make bot-run`.
 
 ---

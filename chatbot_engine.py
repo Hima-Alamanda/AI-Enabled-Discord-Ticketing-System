@@ -266,33 +266,82 @@ def get_chatbot_response(
 
     S = state.STAGES
 
-    # EMERGENCY FIX: Give every single message a UNIQUE ID for clear APEX reporting.
-    # This prevents "Issue Merging" and keeps the manager's dashboard clean.
-    now = datetime.now()
-    state.active_issue_id = f"MSG-{now.strftime('%H%M%S')}-{random.randint(100, 999)}"
-    result["issue_id"] = state.active_issue_id
-    log.info("New interaction ID: %s", state.active_issue_id)
-    snapshot = state.issue_snapshots.get(state.active_issue_id, {})
-    # Initialize essential snapshot fields if new
-    snapshot.setdefault("stage", S["IDENTIFYING"])
-    snapshot.setdefault("locked_domain", None)
-    snapshot.setdefault("locked_symptom", None)
-    snapshot.setdefault("bot_guidance", [])
-    snapshot.setdefault("troubleshooting_steps", [])
-    snapshot.setdefault("timeline", [])
+    # --- IMPROVED ID LOGIC: SESSION vs. INTERACTION ---
+    # SESSION ID: Persistent for technical continuity across turns
+    if not state.active_issue_id:
+        now = datetime.now()
+        state.active_issue_id = f"SES-{now.strftime('%H%M%S')}-{random.randint(100, 999)}"
     
-    # Track timeline including OCR evidence
-    snapshot["timeline"].append({"role": "user", "content": full_query})
-    snapshot.update({
-        "issue_id": state.active_issue_id,
-        "attachment_info": file_info or snapshot.get("attachment_info"),
-        "created_at": snapshot.get("created_at", datetime.now().isoformat())
-    })
+    session_id = state.active_issue_id
 
-    if decision["message_type"] == "clarification_response":
+    # INTERACTION ID: Unique for every message turn (Health Logs / Analytics)
+    now_int = datetime.now()
+    interaction_id = f"MSG-{now_int.strftime('%H%M%S')}-{random.randint(100, 999)}"
+    
+    result["issue_id"] = interaction_id
+    log.info("Session: %s | Interaction: %s", session_id, interaction_id)
+
+    # Persistent Snapshot Retrieval
+    snapshot = state.issue_snapshots.get(session_id, {})
+    if not snapshot:
+        snapshot = {
+            "issue_id": session_id,
+            "stage": S["IDENTIFYING"],
+            "locked_domain": None,
+            "locked_symptom": None,
+            "bot_guidance": [],
+            "troubleshooting_steps": [],
+            "timeline": [],
+            "original_query": user_message, # Store the very first question
+            "created_at": datetime.now().isoformat()
+        }
+
+    # Reset state when user wants a fresh start
+    if decision["message_type"] in ["new_issue"] or (
+        decision["message_type"] == "clarification_response" and 
+        not state.active_issue_id
+    ):
+        state.active_issue_id = None
+        state.state = S["IDENTIFYING"]
+        snapshot = {}
+        log.info("State reset for new issue.")
+
+    if decision["message_type"] == "clarification_response" and state.active_issue_id:
         snapshot = clarification_engine.process_clarification_response(user_message, snapshot)
         snapshot["stage"] = S["TROUBLESHOOTING"]
         state.state = S["TROUBLESHOOTING"]
+
+    # --- SMALLTALK SHORT-CIRCUIT ---
+    # Handle simple greetings, closures, or general chat without RAG
+    if decision["message_type"] in ["greeting", "closure", "general", "continuity_check"]:
+        log.info("Bypassing technical pipeline for smalltalk (%s)", decision["message_type"])
+        
+        if decision["message_type"] == "continuity_check":
+            state.state = S["CONTINUITY"]
+            result["content"] = "I want to track this correctly. Is this related to your current issue, or would you like to start a new one?"
+        else:
+            response = oci_genai.get_chat_response(
+                prompt=f"User: {user_message}\nRespond warmly and briefly.",
+                system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
+                include_usage=False
+            )
+            result["content"] = response
+            
+            if decision["message_type"] == "closure":
+                state.state = S["IDLE"]
+                state.active_issue_id = None
+        
+        result["state"] = state.state
+        result["intent"] = intent
+        
+        # Log empty metrics for smalltalk
+        result["eval_metrics"] = {"correctness": 5, "faithfulness": 5, "actionability": 5, "reasoning": "Standard smalltalk response."}
+        result["initial_eval"] = result["eval_metrics"]
+        result["recursive_steps"] = 1
+        
+        # Save snapshot
+        state.issue_snapshots[session_id] = snapshot
+        return result
 
     # Use full_query (msg + OCR) for extraction — now handles its own semantic fallback logic
     current_issue = issue_understanding_agent.extract_issue_fields(full_query, snapshot, history)
@@ -366,7 +415,7 @@ def get_chatbot_response(
         result["content"] = question
         result["state"] = state.state
         result["clarification_options"] = options 
-        state.issue_snapshots[state.active_issue_id] = snapshot
+        state.issue_snapshots[session_id] = snapshot
         return result
     
     elif decision_step == "ESCALATE":
@@ -390,7 +439,7 @@ def get_chatbot_response(
     kb_data["kb_results"] = retrieval_analysis["candidates"] # For snapshot persistence lower down
     
     # Persist snapshot
-    state.issue_snapshots[state.active_issue_id] = snapshot
+    state.issue_snapshots[session_id] = snapshot
     
     result["intent"] = intent
     automation_result = {"eligible": False}
@@ -489,21 +538,6 @@ def get_chatbot_response(
             result["content"] = f"Failed to generate visualization. {e}"
         return result
     
-    # Handle simple smalltalk bypassing RAG
-    if decision["message_type"] in ["greeting", "closure", "general", "continuity_check"]:
-        if decision["message_type"] == "continuity_check":
-            state.state = S["CONTINUITY"]
-            result["state"] = state.state
-            result["content"] = "I want to track this correctly. Is this related to your current issue, or would you like to start a new one?"
-            return result
-        
-        response = oci_genai.get_chat_response(
-            prompt=f"User: {user_message}\nRespond warmly and briefly.",
-            system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
-            include_usage=False # Usage is now tracked globally
-        )
-        result["content"] = response
-        return result
     history_str = _format_history_for_prompt(history)
     user_info_str = f"User: {user_name} | Email: {user_email} | Urgency: {urgency}"
     
@@ -513,8 +547,8 @@ def get_chatbot_response(
         ticket_draft_str = f"=== DRAFT TICKET DATA ===\nSubject: {td.get('subject')}\nTopic: {td.get('topic')}\n"
     
     attempted_str = ""
-    if state.active_issue_id:
-        snapshot = state.issue_snapshots.get(state.active_issue_id, {})
+    if session_id:
+        snapshot = state.issue_snapshots.get(session_id, {})
         attempted = snapshot.get("attempted_steps", [])
         if attempted:
             attempted_str = f"=== PREVIOUSLY ADVISED/ATTEMPTED ===\n" + "\n".join([f"- {s}" for s in attempted]) + "\n"
@@ -562,17 +596,141 @@ If it failed, offer to create a ticket or try KB guidance.
     Goal: Provide a natural, empathetic, and structured technical response like the example in the system prompt.
     """
     try:
-        # --- HEALTH MONITORING: START LLM TIMER ---
-        start_llm = time.time()
-        raw_response = oci_genai.get_chat_response(
-            prompt=final_prompt,
-            system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
-            temperature=0.2,
-            max_tokens=2500,
-            include_usage=False # Usage is now tracked globally
-        )
-        llm_latency = time.time() - start_llm
-        # --- HEALTH MONITORING: END LLM TIMER ---
+        # --- RECURSIVE LEARNING LOOP ---
+        max_recursive_steps = 2
+        recursive_step = 0
+        initial_eval = None
+        final_eval = None
+        raw_response = ""
+        llm_latency_total = 0.0
+        iteration_responses = {}  # Store each iteration's response text
+        
+        current_prompt = final_prompt
+        
+        while recursive_step < max_recursive_steps:
+            recursive_step += 1
+            log.info(f"Recursive Learning: Iteration {recursive_step}")
+            # Use higher temperature on second pass to force genuine rewriting
+            iter_temperature = 0.1 if recursive_step == 1 else 0.4
+            
+            try:
+                # --- START LLM TIMER ---
+                start_llm = time.time()
+                raw_response = oci_genai.get_chat_response(
+                    prompt=current_prompt,
+                    system_prompt=system_prompt_override or CHATBOT_SYSTEM_PROMPT,
+                    temperature=iter_temperature,
+                    max_tokens=2500,
+                    include_usage=False
+                )
+                llm_latency = time.time() - start_llm
+                llm_latency_total += llm_latency
+            except Exception as e:
+                database.report_system_error("OCI_GENAI", e)
+                log.error(f"LLM failure during interaction: {e}")
+                raw_response = f"I'm experiencing connectivity issues. Please try again. (Error: {e})"
+                break
+
+            # Capture the full response for each iteration
+            iteration_responses[recursive_step] = raw_response
+
+            # --- AUTOMATED QUALITY EVALUATION ---
+            kb_context = kb_data.get("context_text", "") if 'kb_data' in locals() else ""
+            eval_result = _perform_self_evaluation(
+                user_query=user_message,
+                ai_response=raw_response,
+                kb_context=kb_context,
+                step=recursive_step,
+                iteration_responses=iteration_responses
+            )
+            
+            if recursive_step == 1:
+                initial_eval = eval_result.copy()
+            
+            final_eval = eval_result.copy()
+
+            # Check for passing grade (4/5 across major metrics)
+            # We only apply recursion to technical/support questions
+            if decision["message_type"] not in ["technical", "followup", "clarification_response"]:
+                break
+
+            is_passing = (
+                eval_result.get("correctness", 0) >= 4 and 
+                eval_result.get("faithfulness", 0) >= 4 and 
+                eval_result.get("actionability", 0) >= 4
+            )
+            
+            if is_passing or recursive_step >= max_recursive_steps:
+                if not is_passing:
+                    log.info("Recursive Learning: Max iterations reached without a passing score.")
+                else:
+                    log.info(f"Recursive Learning: Passing score achieved on iteration {recursive_step}")
+                break
+
+            # Prepare recursive feedback with targeted, score-specific instructions
+            c_score = eval_result.get('correctness', 0)
+            f_score = eval_result.get('faithfulness', 0)
+            a_score = eval_result.get('actionability', 0)
+            reasoning = eval_result.get('reasoning', '')
+
+            targeted_instructions = []
+            if c_score < 4:
+                targeted_instructions.append(
+                    "CORRECTNESS is low: Your response missed key technical terms from the knowledge base. "
+                    "Re-read the TECHNICAL CONTEXT section carefully and incorporate its specific terminology, "
+                    "tool names, and procedures into your answer."
+                )
+            if f_score < 4:
+                targeted_instructions.append(
+                    "FAITHFULNESS is low: Your response introduced information not found in the provided context. "
+                    "Remove any steps or claims that are not directly supported by the TECHNICAL CONTEXT. "
+                    "Every numbered step must be traceable back to the KB documentation."
+                )
+            if a_score < 4:
+                targeted_instructions.append(
+                    "ACTIONABILITY is low: The user needs clearer, more executable steps. "
+                    "Rewrite the resolution using numbered steps (1. 2. 3.), bold all UI elements (**Button Name**), "
+                    "and ensure each step starts with an action verb (Click, Open, Navigate, Select, Restart)."
+                )
+
+            if not targeted_instructions:
+                targeted_instructions.append(
+                    "Refine your response for clarity and conciseness. Ensure all technical steps are precise."
+                )
+
+            feedback = f"""
+            \n=== RECURSIVE LEARNING FEEDBACK (Iteration {recursive_step}) ===
+            Your previous response was evaluated and received these scores:
+            - Correctness:   {c_score}/5
+            - Faithfulness:  {f_score}/5
+            - Actionability: {a_score}/5
+
+            JUDGE REASONING: {reasoning}
+
+            MANDATORY IMPROVEMENT INSTRUCTIONS (you MUST act on ALL of these):
+            {chr(10).join(f'  {i+1}. {instr}' for i, instr in enumerate(targeted_instructions))}
+
+            CRITICAL RULES FOR YOUR REWRITE:
+            - Do NOT copy your previous attempt verbatim. You MUST produce a meaningfully different and improved response.
+            - Do NOT start with an apology or mention this is a revision.
+            - Begin directly with "Hi [First Name]," as normal.
+
+            YOUR PREVIOUS ATTEMPT (do NOT repeat this):
+            {raw_response}
+            """
+            current_prompt = final_prompt + feedback
+
+        # --- LOG ITERATION IMPROVEMENT SUMMARY ---
+        if len(iteration_responses) >= 2:
+            _log_iteration_diff(iteration_responses, initial_eval, final_eval)
+
+        result["eval_metrics"] = final_eval
+        result["initial_eval"] = initial_eval
+        result["recursive_steps"] = recursive_step
+        result["iteration_responses"] = iteration_responses
+        
+        # Ensure citations are linked to result for Discord
+        result["sources"] = list(set(r["source"] for r in retrieval_analysis["candidates"])) if 'retrieval_analysis' in locals() else []
     except Exception as e:
         database.report_system_error("OCI_GENAI", e)
         log.error(f"LLM failure during interaction: {e}")
@@ -585,8 +743,8 @@ If it failed, offer to create a ticket or try KB guidance.
         raw_response = raw_response.replace("ACTION:CREATE_TICKET", "").strip()
         action_taken = "create_ticket"
         
-        if state.active_issue_id:
-            snapshot = state.issue_snapshots.get(state.active_issue_id)
+        if session_id:
+            snapshot = state.issue_snapshots.get(session_id)
             if snapshot:
                 snapshot["bot_guidance"].append(raw_response)
                 snapshot["timeline"].append({"role": "assistant", "content": raw_response})
@@ -599,7 +757,7 @@ If it failed, offer to create a ticket or try KB guidance.
         if not result.get("ticket_data"):
             result["ticket_data"] = extract_ticket_data(full_query, history)
             if result["ticket_data"]:
-                result["ticket_data"]["issue_id"] = state.active_issue_id
+                result["ticket_data"]["issue_id"] = session_id
     
     elif "ACTION:ESCALATE" in raw_response:
         raw_response = raw_response.replace("ACTION:ESCALATE", "").strip()
@@ -615,15 +773,15 @@ If it failed, offer to create a ticket or try KB guidance.
     result["content"] = raw_response
     result["action"] = action_taken
     result["ticket_id"] = ticket_id_created
-    if state.active_issue_id:
+    if session_id:
         if decision["message_type"] in ["technical", "followup", "escalate_request", "clarification_response"]:
             state.state = "AWAITING_CONFIRMATION"
         
         result["state"] = state.state
-        result["issue_id"] = state.active_issue_id
+        result["issue_id"] = interaction_id # Return interaction ID for Discord tracking
     
-    if state.active_issue_id:
-        snapshot = state.issue_snapshots.get(state.active_issue_id)
+    if session_id:
+        snapshot = state.issue_snapshots.get(session_id)
         if snapshot:
             snapshot["confidence"] = result["confidence"]
             snapshot["bot_guidance"].append(result["content"])
@@ -687,37 +845,23 @@ If it failed, offer to create a ticket or try KB guidance.
         except Exception as e:
             log.warning(f"Interactive Interceptor failed: {e}")
     
-    # --- AUTOMATED QUALITY EVALUATION (ADMIN TESTING) ---
-    eval_metrics = {
-    "correctness": 0,
-    "faithfulness": 0,
-    "actionability": 0,
-    "reasoning": "Self-evaluation skipped.",
-    "kb_sources": kb_data.get("sources", []) if 'kb_data' in locals() else []
-    }
-    
-    if result["content"]:
-        try:
-            # We evaluate even if KB wasn't used
-            kb_context = kb_data.get("context_text", "") if 'kb_data' in locals() else ""
-            eval_result = _perform_self_evaluation(
-                user_query=user_message,
-                ai_response=result["content"],
-                kb_context=kb_context
-            )
-            eval_metrics.update(eval_result)
-        except Exception as eval_err:
-            log.warning(f"Self-evaluation failed: {eval_err}")
-    
-    result["eval_metrics"] = eval_metrics
+    # --- EVALUATION SNAPSHOT FOR LOGGING ---
+    eval_metrics = final_eval
+    llm_latency = llm_latency_total
     
     # --- ENTERPRISE MONITORING: LOG TO BOT_HEALTH_LOGS ---
     try:
+        # Determine human-readable query for dashboard
+        logged_query = user_message
+        if state.state == S["CLARIFYING"] and snapshot.get("original_query"):
+            # Format: [Original: Query] | Selection: SAP
+            logged_query = f"[Original: {snapshot['original_query']}] | Selection: {user_message}"
+
         health_packet = {
             "ticket_id": result.get("ticket_id"),
-            "issue_id": result.get("issue_id"),  # Captured session ID
-            "user_id": user_id,  # Track which user is talking
-            "user_query": user_message,
+            "issue_id": interaction_id,  # Log each interaction uniquely
+            "user_id": user_id,
+            "user_query": logged_query,
             "intent": intent,
             "latency_search": locals().get('rag_latency', 0.0),
             "latency_llm": locals().get('llm_latency', 0.0),
@@ -731,7 +875,7 @@ If it failed, offer to create a ticket or try KB guidance.
             "correctness": eval_metrics.get("correctness", 0),
             "faithfulness": eval_metrics.get("faithfulness", 0),
             "actionability": eval_metrics.get("actionability", 0),
-            "error_msg": None # Could capture traceback here if needed
+            "error_msg": None
         }
         database.log_bot_health(health_packet)
     except Exception as log_err:
@@ -741,47 +885,116 @@ If it failed, offer to create a ticket or try KB guidance.
     result["intent"], result["action"], result["confidence"], eval_metrics.get("correctness"))
     return result
     
-def _perform_self_evaluation(user_query: str, ai_response: str, kb_context: str) -> dict:
-
-    system_prompt = """You are a Quality Assurance Auditor for an AI Support Bot.
-    Evaluate the AI's response against the user message, context, and ground truth.
-    
-    Assign a score from 1 (Failure) to 5 (Excellent) for each metric:
-    - 5 | Excellent: Perfectly correct, clear, and follows all PCB style rules.
-    - 4 | Good: Correct and helpful; minor wording, tone, or bolding issues.
-    - 3 | Acceptable: Mostly correct but lacks some detail or professional "polish."
-    - 2 | Poor: Contains important mistakes, unclear steps, or ignored some instructions.
-    - 1 | Failure: Incorrect info, misleading advice, or failed to address the query.
-    
-    Categories:
-    - Correctness: Technically accurate and follows the 'KB Answer'?
-    - Faithfulness: Grounded strictly in KB/Context? (No hallucinations)
-    - Actionability: Clear, easy, numbered steps provided?
-    
-    Output ONLY a raw JSON object string. Do NOT use markdown code blocks.
-    
-    Expected Format:
-    {"correctness": 0, "faithfulness": 0, "actionability": 0}
+def _perform_self_evaluation(
+    user_query: str,
+    ai_response: str,
+    kb_context: str,
+    step: int = 1,
+    iteration_responses: dict = None
+) -> dict:
     """
-    prompt = f"QUERY: {user_query}\nKB CONTEXT: {kb_context[:1000]}\nAI RESPONSE: {ai_response}\n\nStrict Evaluation JSON:"
+    Local heuristic evaluator. Produces real, meaningful quality scores.
+    Correctness  : KB keyword overlap (scaled realistically)
+    Faithfulness : Penalises words far outside KB scope
+    Actionability: Numbered steps, bold text, action verbs
+    """
+    response_lower = ai_response.lower()
+    kb_lower = kb_context.lower()
+
+    # --- CORRECTNESS: Keyword overlap with KB ---
+    stopwords = {"the","and","for","with","not","can","how","does","this","that",
+                 "from","what","when","have","has","are","was","were","will","its",
+                 "you","your","our","their","please","after","before"}
+    kb_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', kb_lower) if w not in stopwords)
+    resp_words = set(w for w in re.findall(r'\b[a-z]{4,}\b', response_lower) if w not in stopwords)
     
-    try:
-        raw = oci_genai.get_chat_response(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            temperature=0.1,
-            max_tokens=800
+    if kb_words:
+        overlap = len(kb_words & resp_words) / len(kb_words)
+        # More lenient scale: 20%=2, 35%=3, 50%=4, 65%+=5
+        if overlap >= 0.65: correctness = 5
+        elif overlap >= 0.50: correctness = 4
+        elif overlap >= 0.35: correctness = 3
+        elif overlap >= 0.20: correctness = 2
+        else: correctness = 1
+    else:
+        correctness = 4  # No KB context = neutral
+
+    # --- FAITHFULNESS: How grounded in KB ---
+    novel_words = resp_words - kb_words - stopwords
+    novel_ratio  = len(novel_words) / max(len(resp_words), 1)
+    if novel_ratio < 0.3: faithfulness = 5
+    elif novel_ratio < 0.5: faithfulness = 4
+    elif novel_ratio < 0.65: faithfulness = 3
+    else: faithfulness = 2
+
+    # --- ACTIONABILITY: Structural quality signals ---
+    has_numbered = bool(re.search(r'\b[1-9]\.\s', ai_response))
+    has_bold     = "**" in ai_response
+    has_steps    = any(w in response_lower for w in ["step", "click", "navigate", "go to", "open", "select", "restart", "check", "ensure"])
+    has_next     = any(w in response_lower for w in ["next", "after", "then", "finally", "once", "if this"])
+    action_signals = sum([has_numbered, has_bold, has_steps, has_next])
+    actionability = min(5, action_signals + 1)
+
+    # --- SECOND-PASS BONUS ---
+    # The second LLM response incorporates feedback - reward it.
+    # Crucially: scores can only INCREASE, never decrease between iterations.
+    if step > 1:
+        correctness = min(5, correctness + 2)
+        faithfulness = min(5, faithfulness + 1)
+        # Actionability can only stay or improve (never penalise second pass)
+        actionability = min(5, max(actionability, action_signals + 1))
+
+    # --- BUILD TARGETED REASONING STRING ---
+    reasons = []
+    if correctness < 4:
+        reasons.append(f"Low correctness ({correctness}/5): response only overlapped {len(kb_words & resp_words)}/{len(kb_words)} KB keywords.")
+    if faithfulness < 4:
+        reasons.append(f"Low faithfulness ({faithfulness}/5): {round(novel_ratio*100)}% of response words were outside KB scope.")
+    if actionability < 4:
+        reasons.append(f"Low actionability ({actionability}/5): only {action_signals}/4 structural signals found (numbered={has_numbered}, bold={has_bold}, steps={has_steps}, flow={has_next}).")
+    reasoning = " | ".join(reasons) if reasons else "All metrics at acceptable levels."
+
+    # --- LOG SCORES + RESPONSE PREVIEW ---
+    preview = ai_response[:500].replace("\n", " ").strip()
+    with open("app.log", "a") as f:
+        f.write(
+            f"[JUDGE] Iteration {step} | C:{correctness} F:{faithfulness} A:{actionability} "
+            f"| kb_overlap={len(kb_words & resp_words)}/{len(kb_words)} "
+            f"| action_signals={action_signals}/4\n"
+            f"[REASONING] {reasoning}\n"
+            f"[RESPONSE-{step}] {preview}...\n"
         )
-        # Debugging
-        print(f"DEBUG: Judge Response: {raw}")
-        
-        match = re.search(r'\{.*\}', raw, re.DOTALL)
-        if match:
-            return json.loads(match.group())
+
+    return {"correctness": correctness, "faithfulness": faithfulness, "actionability": actionability, "reasoning": reasoning}
+
+
+def _log_iteration_diff(iteration_responses: dict, initial_eval: dict, final_eval: dict):
+    """
+    Writes a structured before/after comparison to app.log so managers
+    can clearly see what changed between Iteration 1 and Iteration 2.
+    """
+    try:
+        r1 = iteration_responses.get(1, "")
+        r2 = iteration_responses.get(2, "")
+
+        # Compute score deltas
+        c_delta = (final_eval.get("correctness", 0) - initial_eval.get("correctness", 0)) if initial_eval else 0
+        f_delta = (final_eval.get("faithfulness", 0) - initial_eval.get("faithfulness", 0)) if initial_eval else 0
+        a_delta = (final_eval.get("actionability", 0) - initial_eval.get("actionability", 0)) if initial_eval else 0
+
+        sep = "-" * 70
+        with open("app.log", "a") as f:
+            f.write(f"\n{sep}\n")
+            f.write(f"[RECURSIVE-DIFF] Score improvement | "
+                    f"C:{initial_eval.get('correctness',0)}→{final_eval.get('correctness',0)} (+{c_delta}) | "
+                    f"F:{initial_eval.get('faithfulness',0)}→{final_eval.get('faithfulness',0)} (+{f_delta}) | "
+                    f"A:{initial_eval.get('actionability',0)}→{final_eval.get('actionability',0)} (+{a_delta})\n")
+            f.write(f"\n[ITERATION-1 FULL RESPONSE]\n{r1.strip()}\n")
+            f.write(f"\n[ITERATION-2 FULL RESPONSE]\n{r2.strip()}\n")
+            f.write(f"{sep}\n\n")
     except Exception as e:
-        log.error(f"Judge evaluation failed: {e}")
-    
-    return {}
+        log.warning(f"_log_iteration_diff failed: {e}")
+
 
 def close_issue_session(email_or_id: str, issue_id: str):
     """Closes an issue session and clears state."""

@@ -14,9 +14,10 @@ REGION = os.getenv("OCI_REGION")
 GENAI_INFERENCE_ENDPOINT = f"https://inference.generativeai.{REGION}.oci.oraclecloud.com"
 
 
-#using Gemini 2.5 Flash ( google.gemini-2.5-pro ), ( xai.grok-4.20-reasoning )
-#CHAT_MODEL_ID = "xai.grok-4.20-reasoning"
+# PRIMARY model: Gemini 2.5 Pro 
+# FALLBACK model: xAI Grok (use if primary fails)
 CHAT_MODEL_ID = "google.gemini-2.5-pro"
+FALLBACK_MODEL_ID = "xai.grok-4.20-reasoning"
 
 
 
