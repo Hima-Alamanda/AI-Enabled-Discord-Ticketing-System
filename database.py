@@ -8,7 +8,7 @@ import uuid
 import ast
 import oci_config
 
-DB_USER = "EDI_TEST"
+DB_USER = os.getenv("DB_USER", "ADMIN")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # Dynamically locate Wallet and Instant Client based on the project's current folder
@@ -20,7 +20,8 @@ WALLET_DIR = os.path.join(BASE_DIR, "Wallet_EDI")
 IC_DIR = os.path.join(BASE_DIR, "instantclient")
 
 # Service name from tnsnames.ora
-DSN = "pocediadw_high"
+DSN = os.getenv("DB_DSN", "pocediadw_high")
+WALLET_PASSWORD = os.getenv("DB_WALLET_PASSWORD", "WalletPassword123")
 
 
 # Initialize Oracle Client (Thick Mode) - Required for macOS SSL / Wallet stability
@@ -48,7 +49,7 @@ def get_pool():
                 increment=1,
                 config_dir=WALLET_DIR,
                 wallet_location=WALLET_DIR,
-                wallet_password="WalletPassword123"
+                wallet_password=WALLET_PASSWORD
             )
             print("Successfully initialized Oracle Connection Pool (Thick Mode).")
         except Exception as e:

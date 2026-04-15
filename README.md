@@ -66,8 +66,11 @@ Since this is an enterprise-grade system, it requires specific local environment
 The system uses **Oracle Instant Client** for high-performance ADW connections.
 1.  **Instant Client**: Download and unzip the [Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client/downloads.html) for your OS.
 2.  **Wallet Folder**: Place your **DB Wallet** (e.g., `Wallet_EDI/`) in the root directory.
-3.  **Environment Variables**: Add the following to your `.env` file:
+3.  **Environment Variables**: Copy `.env.example` to `.env` and fill in your details:
     ```bash
+    cp .env.example .env
+    ```
+    Ensure the following are updated:
     DB_USER=ADMIN
     DB_PASSWORD=YourPassword...
     DB_DSN=your_db_high
