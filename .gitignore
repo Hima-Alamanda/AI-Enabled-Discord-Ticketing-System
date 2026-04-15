@@ -22,6 +22,7 @@ instantclient/
 evaluations/results/*
 !evaluations/results/PROMPT_REPORT.md
 !evaluations/results/prompt_comparison.csv
+!evaluations/results/recursive_learning_report.csv
 
 scripts/
 

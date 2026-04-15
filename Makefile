@@ -6,7 +6,7 @@ PYTHONEXE = python3
 PIP       = pip3
 LOAD_ENV  = from dotenv import load_dotenv; load_dotenv();
 
-.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run eval-suite eval-report eval-push health zoho-sync zoho-archive clean
+.PHONY: help setup db-init rag-sync bot-run bot-status bot-log git-status git-log eval-run eval-suite eval-report eval-push recursive-eval zoho-eval health zoho-sync zoho-archive clean
 
 help: ## Show implementation dashboard
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -59,11 +59,18 @@ eval-suite: ## Run Comprehensive Prompt Engineering Benchmarking (4 Strategies)
 eval-report: ## Generate Executive Excel Performance Report from latest results
 	$(PYTHONEXE) evaluations/generate_excel_report.py
 
+recursive-eval: ## Run Recursive Learning Loop Evaluation (Initial vs Final)
+	$(PYTHONEXE) evaluations/recursive_evaluator.py
+
+zoho-eval: ## Run RAG Vector Search Accuracy Evaluation (ROUGE-L/Keyword Overlap)
+	$(PYTHONEXE) evaluations/zoho_eval.py
+
 eval-push: eval-run eval-suite eval-report ## Run & Automatically push LATEST reports (MD & Excel) to GitHub
 	@echo "Staging latest reports"
 	@git add evaluations/results/*latest*
 	@git add evaluations/results/PROMPT_REPORT.md
 	@git add evaluations/results/EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx
+	@git add evaluations/results/recursive_learning_report.csv
 	@git commit -m "docs: automatic evaluation update $$(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit."
 	@git push origin main
 

@@ -604,12 +604,22 @@ If it failed, offer to create a ticket or try KB guidance.
         raw_response = ""
         llm_latency_total = 0.0
         iteration_responses = {}  # Store each iteration's response text
+        iteration_latencies = {}  # Store latency per iteration
         
         current_prompt = final_prompt
         
         while recursive_step < max_recursive_steps:
             recursive_step += 1
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             log.info(f"Recursive Learning: Iteration {recursive_step}")
+            
+            # Compact query separator
+            if recursive_step == 1:
+                with open("app.log", "a") as f:
+                    # Clean query of newlines for a single-line log entry
+                    clean_query = user_message.replace("\n", " ").replace("\r", " ").strip()
+                    f.write(f"\n{'-'*80}\n")
+                    f.write(f"[{now_str}] [NEW QUERY] Interaction: {interaction_id} | Query: {clean_query}\n")
             # Use higher temperature on second pass to force genuine rewriting
             iter_temperature = 0.1 if recursive_step == 1 else 0.4
             
@@ -625,6 +635,7 @@ If it failed, offer to create a ticket or try KB guidance.
                 )
                 llm_latency = time.time() - start_llm
                 llm_latency_total += llm_latency
+                iteration_latencies[recursive_step] = llm_latency
             except Exception as e:
                 database.report_system_error("OCI_GENAI", e)
                 log.error(f"LLM failure during interaction: {e}")
@@ -641,7 +652,8 @@ If it failed, offer to create a ticket or try KB guidance.
                 ai_response=raw_response,
                 kb_context=kb_context,
                 step=recursive_step,
-                iteration_responses=iteration_responses
+                iteration_responses=iteration_responses,
+                latency=iteration_latencies.get(recursive_step, 0.0)
             )
             
             if recursive_step == 1:
@@ -722,12 +734,13 @@ If it failed, offer to create a ticket or try KB guidance.
 
         # --- LOG ITERATION IMPROVEMENT SUMMARY ---
         if len(iteration_responses) >= 2:
-            _log_iteration_diff(iteration_responses, initial_eval, final_eval)
+            _log_iteration_diff(iteration_responses, initial_eval, final_eval, iteration_latencies)
 
         result["eval_metrics"] = final_eval
         result["initial_eval"] = initial_eval
         result["recursive_steps"] = recursive_step
         result["iteration_responses"] = iteration_responses
+        result["iteration_latencies"] = iteration_latencies
         
         # Ensure citations are linked to result for Discord
         result["sources"] = list(set(r["source"] for r in retrieval_analysis["candidates"])) if 'retrieval_analysis' in locals() else []
@@ -890,7 +903,8 @@ def _perform_self_evaluation(
     ai_response: str,
     kb_context: str,
     step: int = 1,
-    iteration_responses: dict = None
+    iteration_responses: dict = None,
+    latency: float = 0.0
 ) -> dict:
     """
     Local heuristic evaluator. Produces real, meaningful quality scores.
@@ -956,19 +970,20 @@ def _perform_self_evaluation(
 
     # --- LOG SCORES + RESPONSE PREVIEW ---
     preview = ai_response[:500].replace("\n", " ").strip()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open("app.log", "a") as f:
         f.write(
-            f"[JUDGE] Iteration {step} | C:{correctness} F:{faithfulness} A:{actionability} "
+            f"[{now_str}] [JUDGE] Iteration {step} | Latency: {latency:.2f}s | C:{correctness} F:{faithfulness} A:{actionability} "
             f"| kb_overlap={len(kb_words & resp_words)}/{len(kb_words)} "
             f"| action_signals={action_signals}/4\n"
-            f"[REASONING] {reasoning}\n"
-            f"[RESPONSE-{step}] {preview}...\n"
+            f"[{now_str}] [REASONING] {reasoning}\n"
+            f"[{now_str}] [RESPONSE-{step}] {preview}...\n"
         )
 
     return {"correctness": correctness, "faithfulness": faithfulness, "actionability": actionability, "reasoning": reasoning}
 
 
-def _log_iteration_diff(iteration_responses: dict, initial_eval: dict, final_eval: dict):
+def _log_iteration_diff(iteration_responses: dict, initial_eval: dict, final_eval: dict, iteration_latencies: dict = None):
     """
     Writes a structured before/after comparison to app.log so managers
     can clearly see what changed between Iteration 1 and Iteration 2.
@@ -976,22 +991,27 @@ def _log_iteration_diff(iteration_responses: dict, initial_eval: dict, final_eva
     try:
         r1 = iteration_responses.get(1, "")
         r2 = iteration_responses.get(2, "")
+        
+        l1 = iteration_latencies.get(1, 0.0) if iteration_latencies else 0.0
+        l2 = iteration_latencies.get(2, 0.0) if iteration_latencies else 0.0
 
         # Compute score deltas
         c_delta = (final_eval.get("correctness", 0) - initial_eval.get("correctness", 0)) if initial_eval else 0
         f_delta = (final_eval.get("faithfulness", 0) - initial_eval.get("faithfulness", 0)) if initial_eval else 0
         a_delta = (final_eval.get("actionability", 0) - initial_eval.get("actionability", 0)) if initial_eval else 0
 
-        sep = "-" * 70
+        sep = "-" * 80
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open("app.log", "a") as f:
-            f.write(f"\n{sep}\n")
-            f.write(f"[RECURSIVE-DIFF] Score improvement | "
+            f.write(f"[{now_str}] [RECURSIVE-DIFF] Improvement Summary\n")
+            f.write(f"[{now_str}] Latency:  Iter1: {l1:.2f}s | Iter2: {l2:.2f}s | Total: {(l1+l2):.2f}s\n")
+            f.write(f"[{now_str}] Scores:   "
                     f"C:{initial_eval.get('correctness',0)}→{final_eval.get('correctness',0)} (+{c_delta}) | "
                     f"F:{initial_eval.get('faithfulness',0)}→{final_eval.get('faithfulness',0)} (+{f_delta}) | "
                     f"A:{initial_eval.get('actionability',0)}→{final_eval.get('actionability',0)} (+{a_delta})\n")
-            f.write(f"\n[ITERATION-1 FULL RESPONSE]\n{r1.strip()}\n")
-            f.write(f"\n[ITERATION-2 FULL RESPONSE]\n{r2.strip()}\n")
-            f.write(f"{sep}\n\n")
+            f.write(f"[{now_str}] [ITERATION-1 FULL RESPONSE]\n{r1.strip()}\n")
+            f.write(f"[{now_str}] [ITERATION-2 FULL RESPONSE]\n{r2.strip()}\n")
+            f.write(f"{sep}\n")
     except Exception as e:
         log.warning(f"_log_iteration_diff failed: {e}")
 

@@ -21,6 +21,7 @@ Each interaction is handled by a team of agents working in sequence:
 *   **Visual Insight Agent**: The "Artist." Generates professional, dark-themed charts (Bar, Pie, Line) to visualize support trends and ticket distribution directly in Discord.
 *   **Health Monitor Agent**: The "Auditor." Real-time watchdog that verifies connectivity to Oracle ADW, OCI GenAI, and ensures the Discord bot process is active.
 *   **Handoff Agent**: The "Summarizer." When human intervention is needed, it drafts a professional technical brief for the technician.
+*   **Recursive Learning Engine**: The "Self-Corrector." Implements a dual-pass reasoning loop (Initial ➔ Critic ➔ Final) that uses AI-as-a-Judge to self-evaluate and improve responses before delivery.
 
 ### Technology Stack
 *   **Intelligence**: OCI Generative AI (Gemini 2.5 Pro / Grok 4.20 Reasoning / Gemini 2.5 Flash)
@@ -44,6 +45,8 @@ To make management and testing simple, the system includes a **professional Make
 | `make db-init` | Initialize Oracle DB pool and register support agents |
 | `make rag-sync` | Synchronize Knowledge Base articles into the Vector Store |
 | `make zoho-sync`| **Sync Active Tickets from Zoho Desk into KB Vector Store** |
+| `make zoho-eval`| **Run Vector Search Accuracy Evaluation (ROUGE-L)** |
+| `make recursive-eval`| **Run Self-Correction Benchmarks (Initial vs Final Quality)** |
 | **`make eval-push`** | **Run Benchmark Evaluations and push Latest Reports to GitHub** |
 | `make bot-run` | Launch the live Discord AI-Assistant |
 | `make bot-status`| Check if the AI bot is currently running |
@@ -87,7 +90,8 @@ We have implemented a rigorous **Automated Evaluation Framework** (located in `/
 *   **Models Compared**: Google Gemini 2.5 Pro vs. xAI Grok 4.20 Reasoning.
 *   **Metrics**: Correctness, Faithfulness, Actionability, BLEU Score, ROUGE-L, BERTScore, and Latency.
 *   **Executive Reporting**: The system generates a multi-sheet **EXECUTIVE_PERFORMANCE_REPORT_LATEST.xlsx** automatically, featuring heatmapped quality scores, token cost analysis, and model recommendations.
-*   **Clean History Policy**: The system is configured to only track the **LATEST** performance reports in GitHub (via `PROMPT_REPORT.md` and the Excel file), keeping the codebase clean while maintaining a full historical archive locally in the `results/` folder.
+*   **Recursive Learning Audit**: Use `make recursive-eval` to generate the `recursive_learning_report.csv`. This report provides a detailed breakdown of quality improvements (Correctness, Faithfulness, Actionability) between the AI's first draft and its final self-corrected response.
+*   **Clean History Policy**: The system is configured to track only the **LATEST** performance reports in GitHub (via `PROMPT_REPORT.md`, `recursive_learning_report.csv`, and the Excel file), keeping the codebase clean while maintaining a full historical archive locally in the `results/` folder.
 
 
 ## AI Visual Analytics & Insights

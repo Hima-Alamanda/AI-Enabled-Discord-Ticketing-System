@@ -12,6 +12,7 @@ openpyxl
 tabulate
 nltk
 rouge-score
+bert-score
 
 # AI & Knowledge Base
 sentence-transformers

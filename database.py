@@ -1022,7 +1022,7 @@ def report_system_error(service_name, error_msg):
     """
     conn = None
     try:
-        conn = database.get_connection() # Use already initialized or get new
+        conn = get_connection() 
         c = conn.cursor()
         c.execute(
             "UPDATE SYSTEM_HEALTH SET STATUS = 'OFFLINE', ERROR_MSG = :1, LAST_CHECKED = SYSTIMESTAMP WHERE SERVICE_NAME = :2",
