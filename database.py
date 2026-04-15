@@ -8,7 +8,7 @@ import uuid
 import ast
 import oci_config
 
-DB_USER = os.getenv("DB_USER", "ADMIN")
+DB_USER = os.getenv("DB_USER", "EDI_TEST")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 # Dynamically locate Wallet and Instant Client based on the project's current folder
